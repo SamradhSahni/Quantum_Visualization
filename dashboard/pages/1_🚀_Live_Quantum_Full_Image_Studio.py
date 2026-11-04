@@ -2,15 +2,15 @@
 Live Step-by-Step Quantum & Classical Full-Image Reconstruction Studio
 Dedicated Streamlit Page providing:
 1. Custom Image Upload & Preset Loaders
-2. Separate Patch-by-Patch Quantum Circuit Visualizer:
-   - Original Full Image with moving 8x8 ROI window
-   - Dual Quantum Circuits: Circuit A (Horizontal col shift + H) & Circuit B (Vertical row shift + H)
-   - Moving gate execution cursors
-   - Live numerical data-flow passing: Intensity -> Angle theta -> Amplitude difference -> P(edge)
-   - Active patch pixel-by-pixel construction & full assembled quantum image building
-3. Step-by-Step Visual Formation of Classical Pipelines (Sobel, Canny 5-Stage, Robinson 8-Direction)
-4. Comprehensive Final Side-by-Side Results Comparison & Glowing Overlays
-5. Automated Performance Verdict & Complete Quantitative Scorecard Table
+2. Spacious Patch-by-Patch Quantum Circuit Visualizer:
+   - Big Original Full Image (300x300) with animated golden sliding 8x8 ROI window
+   - Magnified Active 8x8 Patch (200x200) with live pixel cursor
+   - Live mathematical data-flow passing card (Intensity -> FRQI Angle -> Amplitude diff -> P(edge))
+   - Large Dual Quantum Circuits: Circuit A (Horizontal col shift + H) & Circuit B (Vertical row shift + H)
+   - Moving gate execution cursors sliding across both circuits
+   - Big Assembled Quantum Edge Map (300x300) building pixel-by-pixel live
+3. Curated Multi-Method Processed Results Gallery of the Uploaded Image (Quantum, Sobel, Canny, Robinson) with Glowing Overlays
+4. In-Depth Performance Diagnostic Verdict & Comprehensive Quantitative Benchmark Scorecard Table
 """
 import streamlit as st
 import streamlit.components.v1 as components
@@ -69,13 +69,6 @@ st.markdown("""
         color: #ffffff;
         margin-bottom: 8px;
     }
-    .step-card {
-        background: #161b22;
-        border: 1px solid #30363d;
-        border-radius: 8px;
-        padding: 14px 18px;
-        margin-bottom: 16px;
-    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -113,14 +106,11 @@ with st.sidebar:
                 st.error(f"Error loading file: {e}")
 
     elif source_type == "Preset Lunar Crater":
-        # Load sample lunar crater
         p_lunar = ROOT_DIR / "data/sombench/patches/1107931740CE_sub_wac_8x8.png"
         if p_lunar.exists():
             base_crater = cv2.imread(str(p_lunar), cv2.IMREAD_GRAYSCALE)
-            # Tile or resize to 32x32 for rich patch-by-patch exploration
             full_image_raw = cv2.resize(base_crater, (32, 32), interpolation=cv2.INTER_CUBIC)
         else:
-            # Fallback procedural crater
             full_image_raw = np.full((32, 32), 100, dtype=np.uint8)
             cv2.circle(full_image_raw, (16, 16), 11, 190, 2)
             cv2.circle(full_image_raw, (16, 16), 8, 45, -1)
@@ -150,7 +140,6 @@ with st.sidebar:
         else:
             processed_input = full_image_raw
     else:
-        # Default fallback
         processed_input = np.full((res_choice, res_choice), 90, dtype=np.uint8)
         cv2.circle(processed_input, (res_choice // 2, res_choice // 2), res_choice // 3, 220, 2)
 
@@ -168,7 +157,7 @@ st.markdown(f"""
     <p style="margin: 8px 0 0 0; color: #8b9eb0; font-size: 14px;">
         Upload an image, observe its patch-by-patch decomposition into 6-qubit registers, watch the dual Horizontal & Vertical
         quantum circuits execute live with moving cursors, see the quantum edge image build pixel-by-pixel, and explore the
-        stage-by-stage formation of Sobel, Canny, and Robinson pipelines with full comparative evaluation.
+        curated multi-method output comparison of all classical and quantum edge detectors.
     </p>
 </div>
 """, unsafe_allow_html=True)
@@ -201,7 +190,7 @@ with st.spinner("Processing complete classical convolutions and Qiskit quantum s
 
 
 # -----------------------------------------------------------------------------
-# SECTION 1: Separate Live Patch-by-Patch Dual Circuit Visualizer Canvas
+# SECTION 1: Spacious Live Patch-by-Patch Dual Circuit Visualizer Canvas
 # -----------------------------------------------------------------------------
 st.markdown("### ⚛️ 1. Live Patch-by-Patch Quantum Circuit & Moving Waveform Engine")
 st.markdown("""
@@ -210,165 +199,17 @@ Each patch is passed through **Circuit A (Horizontal Pass)** and **Circuit B (Ve
 Watch the moving gate execution cursors, track live numerical data-flow passing, and see the full quantum edge image **build pixel-by-pixel and patch-by-patch**!
 """)
 
-animator_html = get_full_image_animator_html(processed_input, patch_size=8)
-components.html(animator_html, height=840, scrolling=True)
+animator_html = get_full_image_animator_html(processed_input, patch_size=8, auto_start=True)
+components.html(animator_html, height=1720, scrolling=True)
 
-st.markdown("<hr style='border-color: #26384a; margin: 30px 0;'>", unsafe_allow_html=True)
-
-
-# -----------------------------------------------------------------------------
-# SECTION 2: Step-by-Step Visual Formation of Classical Pipelines
-# -----------------------------------------------------------------------------
-st.markdown("### 🔬 2. Visual Formation Stages: How Sobel, Canny & Robinson Are Formed")
-st.caption("Inspect the exact intermediate matrices and filtering stages that generate each classical edge detection baseline.")
-
-tab_sob, tab_can, tab_rob = st.tabs([
-    "📐 Sobel 3×3 Operator Formation",
-    "⚡ Canny 5-Stage Pipeline Formation",
-    "🧭 Robinson 8-Direction Compass Formation"
-])
-
-with tab_sob:
-    st.markdown("#### Sobel Intermediate Convolution Maps")
-    st.markdown("""
-    Sobel computes 2D spatial gradients via $3\\times 3$ kernel convolutions:
-    $$K_x = \\begin{bmatrix} -1 & 0 & +1 \\\\ -2 & 0 & +2 \\\\ -1 & 0 & +1 \\end{bmatrix}, \\quad
-      K_y = \\begin{bmatrix} -1 & -2 & -1 \\\\ 0 & 0 & 0 \\\\ +1 & +2 & +1 \\end{bmatrix}$$
-    """)
-
-    col_s1, col_s2, col_s3, col_s4 = st.columns(4)
-    with col_s1:
-        fig, ax = plt.subplots(figsize=(2.8, 2.8), dpi=100)
-        fig.patch.set_facecolor('#0d1117')
-        ax.imshow(np.abs(sobel_res['gx']), cmap='coolwarm')
-        ax.set_title("1. Horizontal |Gx|", color='#58a6ff', fontsize=9)
-        ax.axis('off')
-        st.pyplot(fig)
-        plt.close(fig)
-
-    with col_s2:
-        fig, ax = plt.subplots(figsize=(2.8, 2.8), dpi=100)
-        fig.patch.set_facecolor('#0d1117')
-        ax.imshow(np.abs(sobel_res['gy']), cmap='coolwarm')
-        ax.set_title("2. Vertical |Gy|", color='#58a6ff', fontsize=9)
-        ax.axis('off')
-        st.pyplot(fig)
-        plt.close(fig)
-
-    with col_s3:
-        fig, ax = plt.subplots(figsize=(2.8, 2.8), dpi=100)
-        fig.patch.set_facecolor('#0d1117')
-        ax.imshow(sobel_res['magnitude_norm'], cmap='viridis', vmin=0, vmax=1)
-        ax.set_title("3. Magnitude √(Gx²+Gy²)", color='#58a6ff', fontsize=9)
-        ax.axis('off')
-        st.pyplot(fig)
-        plt.close(fig)
-
-    with col_s4:
-        fig, ax = plt.subplots(figsize=(2.8, 2.8), dpi=100)
-        fig.patch.set_facecolor('#0d1117')
-        ax.imshow(sobel_res['binary'], cmap='gray', vmin=0, vmax=1)
-        ax.set_title(f"4. Binary (T*={sobel_res['threshold']:.2f})", color='#39d353', fontsize=9)
-        ax.axis('off')
-        st.pyplot(fig)
-        plt.close(fig)
-
-with tab_can:
-    st.markdown("#### Canny 5-Stage Progressive Edge Thinning")
-    st.markdown("""
-    Canny uses a 5-stage algorithm: Gaussian Smoothing $\\to$ Gradient Magnitude & Angle Quantization $\\to$
-    Non-Maximum Suppression (NMS) $\\to$ Double Thresholding ($T_{\\text{low}}, T_{\\text{high}}$) $\\to$ Hysteresis Tracking.
-    """)
-
-    col_c1, col_c2, col_c3, col_c4, col_c5 = st.columns(5)
-    with col_c1:
-        fig, ax = plt.subplots(figsize=(2.4, 2.4), dpi=100)
-        fig.patch.set_facecolor('#0d1117')
-        ax.imshow(canny_res['stage1_smoothed'], cmap='gray')
-        ax.set_title("1. Gaussian Smooth", color='#ffd700', fontsize=8)
-        ax.axis('off')
-        st.pyplot(fig)
-        plt.close(fig)
-
-    with col_c2:
-        fig, ax = plt.subplots(figsize=(2.4, 2.4), dpi=100)
-        fig.patch.set_facecolor('#0d1117')
-        ax.imshow(canny_res['stage2_magnitude'], cmap='magma')
-        ax.set_title("2. Raw Magnitude", color='#ffd700', fontsize=8)
-        ax.axis('off')
-        st.pyplot(fig)
-        plt.close(fig)
-
-    with col_c3:
-        fig, ax = plt.subplots(figsize=(2.4, 2.4), dpi=100)
-        fig.patch.set_facecolor('#0d1117')
-        ax.imshow(canny_res['stage3_nms'], cmap='plasma')
-        ax.set_title("3. NMS Thinned", color='#ffd700', fontsize=8)
-        ax.axis('off')
-        st.pyplot(fig)
-        plt.close(fig)
-
-    with col_c4:
-        fig, ax = plt.subplots(figsize=(2.4, 2.4), dpi=100)
-        fig.patch.set_facecolor('#0d1117')
-        ax.imshow(canny_res['stage4_double_th'], cmap='viridis')
-        ax.set_title("4. Double Threshold", color='#ffd700', fontsize=8)
-        ax.axis('off')
-        st.pyplot(fig)
-        plt.close(fig)
-
-    with col_c5:
-        fig, ax = plt.subplots(figsize=(2.4, 2.4), dpi=100)
-        fig.patch.set_facecolor('#0d1117')
-        ax.imshow(canny_res['stage5_binary'], cmap='gray', vmin=0, vmax=1)
-        ax.set_title("5. Hysteresis Binary", color='#39d353', fontsize=8)
-        ax.axis('off')
-        st.pyplot(fig)
-        plt.close(fig)
-
-with tab_rob:
-    st.markdown("#### Robinson Compass: 8-Directional Derivative Convolutions")
-    st.markdown("""
-    Robinson rotates a single $3\\times 3$ directional compass kernel across 8 azimuth angles ($45^\\circ$ increments):
-    $R_{\\max}(x,y) = \\max_k |R_k(x,y)|$.
-    """)
-
-    col_r1, col_r2, col_r3 = st.columns(3)
-    with col_r1:
-        fig, ax = plt.subplots(figsize=(3, 3), dpi=100)
-        fig.patch.set_facecolor('#0d1117')
-        ax.imshow(robinson_res['magnitude_norm'], cmap='inferno', vmin=0, vmax=1)
-        ax.set_title("1. Max Compass Response R_max", color='#32ff78', fontsize=9)
-        ax.axis('off')
-        st.pyplot(fig)
-        plt.close(fig)
-
-    with col_r2:
-        fig, ax = plt.subplots(figsize=(3, 3), dpi=100)
-        fig.patch.set_facecolor('#0d1117')
-        ax.imshow(robinson_res['dominant_direction'], cmap='twilight', vmin=0, vmax=315)
-        ax.set_title("2. Dominant Orientation (0°-315°)", color='#32ff78', fontsize=9)
-        ax.axis('off')
-        st.pyplot(fig)
-        plt.close(fig)
-
-    with col_r3:
-        fig, ax = plt.subplots(figsize=(3, 3), dpi=100)
-        fig.patch.set_facecolor('#0d1117')
-        ax.imshow(robinson_res['binary'], cmap='gray', vmin=0, vmax=1)
-        ax.set_title(f"3. Binary Edges (T*={robinson_res['threshold']:.2f})", color='#39d353', fontsize=9)
-        ax.axis('off')
-        st.pyplot(fig)
-        plt.close(fig)
-
-st.markdown("<hr style='border-color: #26384a; margin: 30px 0;'>", unsafe_allow_html=True)
+st.markdown("<hr style='border-color: #26384a; margin: 35px 0;'>", unsafe_allow_html=True)
 
 
 # -----------------------------------------------------------------------------
-# SECTION 3: Final Multi-Method Side-by-Side Results Comparison
+# SECTION 2: Final Multi-Method Processed Results Comparison (Curated Outputs Only)
 # -----------------------------------------------------------------------------
-st.markdown("### 🖼️ 3. Multi-Method Processed Results & Glowing Overlays")
-st.caption("Inspect the final built continuous edge responses, binary segmentations, and color overlays across all 4 algorithms.")
+st.markdown("### 🖼️ 2. Curated Output Results: Classical vs. Quantum Comparison")
+st.caption("Side-by-side comparison of the final curated edge outputs on the active uploaded image across all 4 algorithms.")
 
 col_in, col_q, col_s, col_c, col_r = st.columns(5)
 
@@ -509,13 +350,13 @@ with col_r:
     st.pyplot(fig)
     plt.close(fig)
 
-st.markdown("<hr style='border-color: #26384a; margin: 30px 0;'>", unsafe_allow_html=True)
+st.markdown("<hr style='border-color: #26384a; margin: 35px 0;'>", unsafe_allow_html=True)
 
 
 # -----------------------------------------------------------------------------
-# SECTION 4: Performance Diagnostic Verdict & Quantitative Scorecard
+# SECTION 3: Performance Diagnostic Verdict & Quantitative Scorecard
 # -----------------------------------------------------------------------------
-st.markdown("### 🏆 4. Performance Diagnosis: Which Method Performed Better & How?")
+st.markdown("### 🏆 3. Performance Diagnosis: Which Method Performed Better & How?")
 
 methods_dict = {
     'FRQI-QHED (Quantum)': {'binary': q_data['binary'], 'conf': q_data['confidence_map'], 'qubits': 6, 'time_ms': 18.4},
