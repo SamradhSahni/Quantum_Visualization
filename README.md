@@ -1,3 +1,5 @@
+# Quantum_Visualization: Interactive Classical & Quantum Edge Detection
+
 # Quantum Lunar Edge Detection — FRQI
 
 An independent FRQI live quantum edge-detection variant of [the original QPIE system](https://github.com/SamradhSahni/Quantum_Lunar_Edge_Detection), based on commit `32f49ddf9752a7152508e87f08200f59ec3eb199`. The original repository is unchanged. This repository preserves its Git history and attribution.
