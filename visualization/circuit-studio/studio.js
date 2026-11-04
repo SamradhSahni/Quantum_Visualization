@@ -29,12 +29,15 @@
         if(g.angle!==undefined)svg+=`<text x="${x}" y="${y+31}" text-anchor="middle" font-size="8" fill="#83957c">${(g.angle/Math.PI).toFixed(2)}π</text>`;
         if(g.type==='M'&&step>=i+1){const event=frames[i+1].event;svg+=`<text x="${x}" y="${y+32}" text-anchor="middle" fill="#6b855b" font-size="10">c${g.target}=${event.value}</text>`;}
         if(g.condition!==undefined&&step>=i+1)svg+=`<text x="${x}" y="${y+32}" text-anchor="middle" fill="#9a7d49" font-size="8">${frames[i+1].event.applied?'APPLIED':'SKIPPED'}</text>`;
-      }svg+='</g>';
+      }
+      if(i < gates.length){svg+=`<g class="gate-del-btn" data-del-index="${i}"><title>Delete gate ${i+1}: ${gateName(g)}</title><circle cx="${x+13}" cy="${y-13}" r="7" class="del-circle"/><text x="${x+13}" y="${y-10}" font-size="9" text-anchor="middle" class="del-x">×</text></g>`;}
+      svg+='</g>';
     });
     $('circuit').setAttribute('viewBox',`0 0 ${width} ${height}`);$('circuit').style.width=`${width}px`;$('circuit').setAttribute('height',height);$('circuit').innerHTML=svg;
     const scroller=$('circuit').parentElement;
     if(scroller.scrollWidth>scroller.clientWidth)scroller.scrollLeft=Math.max(0,left+step*spacing-scroller.clientWidth/2);
     $('circuit').querySelectorAll('[data-index]').forEach(el=>el.addEventListener('click',()=>{pause();move(Number(el.dataset.index));}));
+    $('circuit').querySelectorAll('[data-del-index]').forEach(el=>el.addEventListener('click',e=>{e.stopPropagation();deleteGate(Number(el.dataset.delIndex));}));
   }
   function describe(f){
     const g=f.gate;
@@ -46,6 +49,15 @@
     if(g?.note)text+=` ${g.note}`;
     if(g?.condition!==undefined)text=`c${g.condition} = ${f.event.bit}: ${f.event.applied?'correction applied':'correction skipped; quantum state unchanged'}. ${g.note||''}`;
     $('step-explanation').textContent=text;
+    const actions=$('step-actions');
+    if(actions){
+      if(step>=1&&step<=gates.length){
+        actions.innerHTML=`<button id="del-step-gate" class="text-button danger-btn" style="font-weight:600;display:inline-flex;align-items:center;gap:4px;">🗑 Delete this gate (Step ${step})</button>`;
+        $('del-step-gate').addEventListener('click',()=>deleteGate(step-1));
+      } else {
+        actions.innerHTML='';
+      }
+    }
   }
   function drawState(f){
     const norm=f.re.reduce((s,r,i)=>s+r*r+f.im[i]**2,0);$('norm').textContent=`Σp = ${norm.toFixed(3)}`;
@@ -57,14 +69,56 @@
     $('measurement-note').textContent=f.bits.every(b=>b===null)?'No measurement yet. Gates change the quantum state; classical bits stay unset.':f.bits.every(b=>b!==null)?`Recorded bits: ${[...f.bits].reverse().join('')}. Later gates may still change the quantum state.`:'Partial readout. Unmeasured bits remain unset.';
   }
   function drawHistogram(){const total=Object.values(counts).reduce((a,b)=>a+b,0);$('total').textContent=total;$('histogram').innerHTML=total?Object.entries(counts).sort((a,b)=>b[1]-a[1]).map(([key,count])=>`<div class="hist-row"><span>${key}</span><div class="hist-track"><i style="width:${100*count/total}%"></i></div><span class="hist-count">${count} · ${Math.round(100*count/total)}%</span></div>`).join(''):'<div class="empty-hist">Finish a shot to collect its outcome.</div>';}
+  function deleteGate(index){
+    if(index<0||index>=gates.length)return;
+    pause();
+    const g=gates.splice(index,1)[0];
+    preset=null;
+    if(step>index+1)step--;
+    else if(step===index+1)step=Math.max(0,step-1);
+    resetExperiment();
+    notify(`Deleted gate #${index+1}: ${gateName(g)}`);
+  }
+  function startBlankCircuit(){
+    pause();
+    gates=[];
+    preset='blank';
+    resetExperiment();
+    notify('Started new blank circuit. Select qubits and add gates below.');
+  }
   function render(){
     $('step').value=step;$('step-label').textContent=`STEP ${String(step).padStart(2,'0')} / ${frames.length-1}`;$('shot-number').textContent=`SHOT ${String(shotNumber).padStart(3,'0')}`;$('back').disabled=step===0;$('next').disabled=step===frames.length-1;$('undo').disabled=!gates.length;
+    if($('clear-gates'))$('clear-gates').disabled=!gates.length;
+    if($('active-gate-count'))$('active-gate-count').textContent=gates.length;
+    if($('gate-list')){
+      if(!gates.length){
+        $('gate-list').innerHTML='<div class="empty-gate-list">Empty circuit. Add a gate above to begin.</div>';
+      } else {
+        $('gate-list').innerHTML=gates.map((g,i)=>{
+          const active=step===i+1;
+          return `<div class="gate-item ${active?'active':''}">
+            <button class="gate-item-seek" data-seek="${i+1}" title="Seek to step ${i+1}: ${gateName(g)}">
+              <span class="gate-num">${String(i+1).padStart(2,'0')}</span>
+              <span class="gate-title">${gateName(g)}</span>
+            </button>
+            <button class="gate-item-del" data-del-list="${i}" title="Delete gate ${i+1}" aria-label="Delete gate ${i+1}">✕</button>
+          </div>`;
+        }).join('');
+        $('gate-list').querySelectorAll('[data-seek]').forEach(b=>b.addEventListener('click',()=>{pause();move(Number(b.dataset.seek));}));
+        $('gate-list').querySelectorAll('[data-del-list]').forEach(b=>b.addEventListener('click',e=>{e.stopPropagation();deleteGate(Number(b.dataset.delList));}));
+      }
+    }
     $('circuit-name').textContent=preset?sim.presets[preset].name:'Your circuit';$('description').textContent=preset?sim.presets[preset].description:'An ideal quantum register, your gates, and a final measurement of every qubit.';$('gate-count').textContent=`${n} QUBITS / ${sequence().length} OPERATIONS`;
     document.querySelectorAll('.preset').forEach(b=>b.classList.toggle('active',b.dataset.preset===preset));drawCircuit();describe(frames[step]);drawState(frames[step]);drawHistogram();
   }
-  const icons={bell:'⟷',ghz:'⋈',phase:'◌',qhed:'▦',teleport:'⇢'},subtitles={bell:'Superposition → entanglement',ghz:'Three-qubit correlation',phase:'From phase to probability',qhed:'From the original project',teleport:'Advanced · classical feed-forward'};
-  $('presets').innerHTML=Object.entries(sim.presets).map(([key,p])=>`<button class="preset" data-preset="${key}"><span class="preset-icon">${icons[key]}</span><span>${p.name}<small>${subtitles[key]}</small></span><span class="arrow">›</span></button>`).join('');
+  const icons={blank:'✧',bell:'⟷',ghz:'⋈',phase:'◌',qhed:'▦',teleport:'⇢'},subtitles={blank:'Empty register · build your own',bell:'Superposition → entanglement',ghz:'Three-qubit correlation',phase:'From phase to probability',qhed:'From the original project',teleport:'Advanced · classical feed-forward'};
+  $('presets').innerHTML=Object.entries(sim.presets).map(([key,p])=>`<button class="preset" data-preset="${key}"><span class="preset-icon">${icons[key]||'◈'}</span><span>${p.name}<small>${subtitles[key]||''}</small></span><span class="arrow">›</span></button>`).join('');
   document.querySelectorAll('.preset').forEach(b=>b.addEventListener('click',()=>loadPreset(b.dataset.preset)));
+  if($('new-circuit'))$('new-circuit').addEventListener('click',startBlankCircuit);
+  if($('clear-gates'))$('clear-gates').addEventListener('click',()=>{
+    if(!gates.length){notify('Circuit is already empty.');return;}
+    pause();gates=[];preset=null;resetExperiment();notify('Cleared all gates from the circuit.');
+  });
   $('qubits').addEventListener('change',()=>{const next=Number($('qubits').value);gates=gates.filter(g=>g.type!=='PREP'&&g.target<next&&(g.control===undefined||g.control<next)&&(g.condition===undefined||g.condition<next));n=next;preset=null;updateTargets();resetExperiment();notify('Register resized. Gates outside the register were removed.');});
   $('gate').addEventListener('change',()=>{$('control-field').hidden=!['CX','CZ'].includes($('gate').value);$('angle-field').hidden=!['RX','RY','RZ'].includes($('gate').value);});
   $('add').addEventListener('click',()=>{const type=$('gate').value,g={type,target:Number($('target').value)};if(['CX','CZ'].includes(type))g.control=Number($('control').value);if(['RX','RY','RZ'].includes(type))g.angle=Number($('angle').value)*Math.PI;try{sim.validate(n,[g]);gates.push(g);preset=null;resetExperiment();}catch(e){notify(e.message);}});

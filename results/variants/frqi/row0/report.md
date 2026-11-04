@@ -3,7 +3,7 @@
 Tile: `M1290203799CE_r5872_c1112`; viewer metadata row 0; annotation split `train`.
 
 Processed all 512x512 pixels using 5,476 Qiskit circuits and 44,859,392 measurement shots.
-Elapsed circuit workload: 182.7 seconds. No manual region selection was used.
+Elapsed circuit workload: 125.6 seconds. No manual region selection was used.
 
 Every detected edge is reconstructed from Aer circuit counts. The full-image output does not use the analytical shortcut or a classical edge detector.
 Classical processing prepares grayscale intensities,  calibrates measured probabilities, stitches halos and thresholds the final map.

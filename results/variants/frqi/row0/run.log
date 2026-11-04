@@ -1,25 +1,20 @@
 Running full tile (512, 512), 5 input bands
-Quantum execution: 80/1369 tiles; 320 circuits; 10.7s
-Quantum execution: 160/1369 tiles; 640 circuits; 21.4s
-Quantum execution: 256/1369 tiles; 1024 circuits; 32.8s
-Quantum execution: 336/1369 tiles; 1344 circuits; 43.6s
-Quantum execution: 416/1369 tiles; 1664 circuits; 54.0s
-Quantum execution: 496/1369 tiles; 1984 circuits; 64.4s
-Quantum execution: 576/1369 tiles; 2304 circuits; 75.6s
-Quantum execution: 656/1369 tiles; 2624 circuits; 86.8s
-Quantum execution: 736/1369 tiles; 2944 circuits; 97.9s
-Quantum execution: 816/1369 tiles; 3264 circuits; 109.2s
-Quantum execution: 896/1369 tiles; 3584 circuits; 119.7s
-Quantum execution: 976/1369 tiles; 3904 circuits; 129.8s
-Quantum execution: 1056/1369 tiles; 4224 circuits; 140.3s
-Quantum execution: 1136/1369 tiles; 4544 circuits; 150.6s
-Quantum execution: 1216/1369 tiles; 4864 circuits; 161.1s
-Quantum execution: 1296/1369 tiles; 5184 circuits; 172.3s
-Quantum execution: 1369/1369 tiles; 5476 circuits; 182.7s
-C:\Users\anant\AppData\Local\Programs\Python\Python312\Lib\site-packages\qiskit\visualization\circuit\text.py:784: RuntimeWarning: The encoding cp1252 has a limited charset. Consider a different encoding in your environment. UTF-8 is being used instead
+Quantum execution: 112/1369 tiles; 448 circuits; 10.5s
+Quantum execution: 224/1369 tiles; 896 circuits; 21.5s
+Quantum execution: 336/1369 tiles; 1344 circuits; 31.7s
+Quantum execution: 448/1369 tiles; 1792 circuits; 41.9s
+Quantum execution: 560/1369 tiles; 2240 circuits; 52.3s
+Quantum execution: 688/1369 tiles; 2752 circuits; 63.3s
+Quantum execution: 800/1369 tiles; 3200 circuits; 74.0s
+Quantum execution: 912/1369 tiles; 3648 circuits; 85.1s
+Quantum execution: 1024/1369 tiles; 4096 circuits; 95.2s
+Quantum execution: 1136/1369 tiles; 4544 circuits; 105.4s
+Quantum execution: 1264/1369 tiles; 5056 circuits; 116.5s
+Quantum execution: 1369/1369 tiles; 5476 circuits; 125.5s
+D:\Quantum_Edge_FRQI\.venv\Lib\site-packages\qiskit\visualization\circuit\text.py:784: RuntimeWarning: The encoding cp1252 has a limited charset. Consider a different encoding in your environment. UTF-8 is being used instead
   warn(
 {
-  "output": "C:\\Users\\anant\\Downloads\\Quantum Lunar Detection FRQI\\results\\variants\\frqi\\row0",
+  "output": "D:\\Quantum_Edge_FRQI\\results\\variants\\frqi\\row0",
   "execution": {
     "measurement_shots": 44859392,
     "accepted_edge_outcomes": 44580,
@@ -35,7 +30,7 @@ C:\Users\anant\AppData\Local\Programs\Python\Python312\Lib\site-packages\qiskit\
     "batch_tiles": 16,
     "seed_start": 42,
     "subtract_tile_min": false,
-    "elapsed_seconds": 182.7415292000005,
+    "elapsed_seconds": 125.57323639999959,
     "backend": "Qiskit AerSimulator",
     "method": "statevector",
     "ideal_simulation": true,
@@ -47,7 +42,7 @@ C:\Users\anant\AppData\Local\Programs\Python\Python312\Lib\site-packages\qiskit\
     "gate_trace": {
       "enabled": true,
       "representative_blocks": 86,
-      "run_id": "f7e2c20ad77f47508310b46ad3251264",
+      "run_id": "f04b60a48bc64eac913a80319664fbc0",
       "source": "Checkpoints on the first actual image block of each circuit batch"
     }
   },

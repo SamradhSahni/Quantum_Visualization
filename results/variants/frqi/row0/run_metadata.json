@@ -80,7 +80,7 @@
     "batch_tiles": 16,
     "seed_start": 42,
     "subtract_tile_min": false,
-    "elapsed_seconds": 182.7415292000005,
+    "elapsed_seconds": 125.57323639999959,
     "backend": "Qiskit AerSimulator",
     "method": "statevector",
     "ideal_simulation": true,
@@ -92,7 +92,7 @@
     "gate_trace": {
       "enabled": true,
       "representative_blocks": 86,
-      "run_id": "f7e2c20ad77f47508310b46ad3251264",
+      "run_id": "f04b60a48bc64eac913a80319664fbc0",
       "source": "Checkpoints on the first actual image block of each circuit batch"
     }
   },

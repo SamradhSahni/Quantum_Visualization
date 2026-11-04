@@ -2,6 +2,7 @@
 (function(root) {
   'use strict';
   const presets = {
+    blank: {name:'Blank circuit', n:2, description:'A completely empty quantum register starting in |0...0⟩. Add any gates to build your custom circuit.', gates:[]},
     bell: {name:'Bell pair', n:2, description:'Two qubits. One shared outcome. Watch entanglement form, then measure each qubit.', gates:[{type:'H',target:0},{type:'CX',control:0,target:1}]},
     ghz: {name:'GHZ state', n:3, description:'Extend a Bell pair to three qubits and explore their correlated measurements.', gates:[{type:'H',target:0},{type:'CX',control:0,target:1},{type:'CX',control:1,target:2}]},
     phase: {name:'Phase interference', n:1, description:'A rotation changes relative phase. A final Hadamard turns phase into measurable probability.', gates:[{type:'H',target:0},{type:'RZ',target:0,angle:Math.PI/2},{type:'H',target:0}]},
