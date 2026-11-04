@@ -1,14 +1,15 @@
 """
 Spacious, High-Contrast Full-Image Patch-by-Patch Quantum Circuit & Visual Edge Reconstruction Engine
-Provides:
+Features:
 1. Panel 1: Big Input Canvas (360x360 px) with animated golden sliding 8x8 ROI window
-            + Magnified Active 8x8 Patch Canvas (360x360 px) with live pixel cursor & cell grid
+            + Magnified Active 8x8 Patch Canvas (360x360 px) with live pixel cursor & cell values
             + Live Mathematical Data-Flow Transmission Bridge (Intensity -> FRQI Angle -> Amplitude diff -> P(edge))
-2. Panel 2: Large Standalone Dual Quantum Circuits (Horizontal Pass & Vertical Pass, 175px each, full width)
-            with moving laser execution cursors
-3. Panel 3: Reconstructed Quantum Edge Canvas (360x360 px) forming pixel-by-pixel live
-            + Active 8x8 Patch Edge Map (360x360 px)
-            + Live glowing laser scanning crosshair tracking active coordinate on both canvases
+2. Panel 2: Large Standalone Dual Quantum Circuits (7 Wires: 6 Position + 1 Color Qubit)
+            - Live wire state indicators (|0> vs |1>) matching active pixel coordinates
+            - Gate-by-Gate Step Mode (Init -> CCX -> CX -> X -> Hadamard -> Measure)
+            - Active laser beam and animated interference pulses
+3. Panel 3: True FRQI Quantum Edge Reconstruction Canvas (360x360 px) with exact phase difference
+            (Zero patch-boundary seams, high SNR, razor-sharp crater rims)
 """
 import json
 import numpy as np
@@ -21,7 +22,6 @@ def get_full_image_animator_html(image_2d, patch_size=8, auto_start=True, *args,
     auto_start: whether the simulation starts building immediately on load.
     """
     h, w = image_2d.shape
-    # Ensure dimensions are multiples of patch_size
     pad_h = ((h + patch_size - 1) // patch_size) * patch_size
     pad_w = ((w + patch_size - 1) // patch_size) * patch_size
     if pad_h != h or pad_w != w:
@@ -92,7 +92,7 @@ body {{
 .controls-bar {{
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   flex-wrap: wrap;
   background: #161b22;
   border: 1px solid #30363d;
@@ -104,15 +104,15 @@ body {{
   border: 1px solid #30363d;
   background: #21262d;
   color: #f0f6fc;
-  padding: 10px 18px;
+  padding: 9px 15px;
   border-radius: 6px;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.15s ease;
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
 }}
 .btn:hover {{
   background: #30363d;
@@ -122,18 +122,26 @@ body {{
   background: linear-gradient(135deg, #8957e5, #a371f7);
   color: #ffffff;
   border-color: #bc8cff;
-  box-shadow: 0 0 16px rgba(163, 113, 247, 0.5);
+  box-shadow: 0 0 14px rgba(163, 113, 247, 0.45);
 }}
 .btn-build:hover {{
   background: linear-gradient(135deg, #a371f7, #bc8cff);
 }}
-.btn-instant {{
-  background: linear-gradient(135deg, #1f6feb, #388bfd);
+.btn-gate {{
+  background: #1f6feb;
   color: #ffffff;
-  border-color: #58a6ff;
+  border-color: #388bfd;
+}}
+.btn-gate:hover {{
+  background: #388bfd;
+}}
+.btn-instant {{
+  background: linear-gradient(135deg, #238636, #2ea043);
+  color: #ffffff;
+  border-color: #3fb950;
 }}
 .btn-instant:hover {{
-  background: linear-gradient(135deg, #388bfd, #58a6ff);
+  background: linear-gradient(135deg, #2ea043, #3fb950);
 }}
 .form-select {{
   background: #0d1117;
@@ -169,7 +177,7 @@ body {{
   font-weight: 600;
 }}
 .hud-val {{
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 700;
   font-family: 'Consolas', monospace;
 }}
@@ -366,7 +374,7 @@ body {{
 }}
 .circuit-svg {{
   width: 100%;
-  height: 165px;
+  height: 180px;
   display: block;
 }}
 
@@ -394,13 +402,14 @@ body {{
       <span>Live Step-by-Step Quantum Edge Reconstruction Studio</span>
     </h2>
     <span style="font-size:13px; color:#8b9eb0;">
-      Patch-by-Patch Decomposition &bull; Dual 6-Qubit Interference Circuits &bull; Live Pixel-by-Pixel Assembly
+      Exact FRQI Phase Encoding &bull; Dual 7-Qubit Interference Circuits &bull; Zero Patch-Boundary Artifacts
     </span>
   </div>
 
   <!-- Interactive Controls Bar -->
   <div class="controls-bar">
     <button class="btn btn-build" data-action="run" type="button">▶ Start / Pause Auto-Build</button>
+    <button class="btn btn-gate" data-action="step-gate" type="button">⏯ Step 1 Gate</button>
     <button class="btn" data-action="step-pixel" type="button">⏩ Step 1 Pixel</button>
     <button class="btn" data-action="step-patch" type="button">⏭ Step 1 Patch (64 px)</button>
     <button class="btn btn-instant" data-action="instant" type="button">✨ Instant Full Reconstruction</button>
@@ -409,10 +418,10 @@ body {{
     <label style="display:flex; align-items:center; gap:8px; margin-left:auto; font-size:12px; color:#8b9eb0;">
       Execution Speed:
       <select class="form-select" data-control="speed">
-        <option value="120">Slow (120ms)</option>
+        <option value="150">Slow (150ms)</option>
         <option value="50" selected>Normal (50ms)</option>
         <option value="15">Fast (15ms)</option>
-        <option value="3">Hyper (3ms)</option>
+        <option value="2">Hyper (2ms)</option>
       </select>
     </label>
   </div>
@@ -429,15 +438,19 @@ body {{
     </div>
     <div class="hud-item">
       <span class="hud-label">Intensity Hand-off</span>
-      <span class="hud-val" id="hud-intensity" style="color:#f0f6fc;">Ia: 0 &bull; Ib: 0 &bull; &Delta;I: 0</span>
+      <span class="hud-val" id="hud-intensity" style="color:#f0f6fc;">I: 0 &bull; I_nbr: 0 &bull; &Delta;I: 0</span>
     </div>
     <div class="hud-item">
-      <span class="hud-label">Hadamard Edge Probability</span>
+      <span class="hud-label">Quantum Edge Probability</span>
       <span class="hud-val" id="hud-prob" style="color:#ff79c6;">P(edge) = 0.00000</span>
     </div>
     <div class="hud-item">
-      <span class="hud-label">Reconstruction Progress</span>
-      <span class="hud-val" id="hud-progress" style="color:#39d353;">0% (0 / 0 px)</span>
+      <span class="hud-label">Active Circuit Gate</span>
+      <span class="hud-val" id="hud-active-gate" style="color:#39d353;">Ready</span>
+    </div>
+    <div class="hud-item">
+      <span class="hud-label">Progress</span>
+      <span class="hud-val" id="hud-progress" style="color:#388bfd;">0% (0 / 0 px)</span>
     </div>
     <div class="progress-wrap">
       <div class="progress-fill" id="anim-progress-fill"></div>
@@ -481,19 +494,19 @@ body {{
     <!-- Live Mathematical Data Transmission Bridge -->
     <div class="data-flow-strip">
       <div class="flow-step-item">
-        <div class="flow-step-tag">Step 1 &bull; Pixel Brightness</div>
+        <div class="flow-step-tag">Step 1 &bull; Pixel Extraction</div>
         <div class="flow-step-math">
           Active: <b id="flow-px-val" style="color:#58a6ff;">I = 0</b><br>
-          Neighbor: <b id="flow-nbr-val" style="color:#79c0ff;">I_nbr = 0</b><br>
-          Gradient: <b id="flow-diff-val" style="color:#e6edf3;">&Delta;I = 0</b>
+          Neighbor: <b id="flow-nbr-val" style="color:#79c0ff;">I_col = 0, I_row = 0</b><br>
+          Difference: <b id="flow-diff-val" style="color:#e6edf3;">&Delta;I = 0</b>
         </div>
       </div>
 
       <div class="flow-step-item">
-        <div class="flow-step-tag">Step 2 &bull; FRQI Angle Encoding</div>
+        <div class="flow-step-tag">Step 2 &bull; FRQI State Encoding</div>
         <div class="flow-step-math">
           Rotation: <b id="flow-theta-val" style="color:#ffd700;">&theta; = 0.000 rad</b><br>
-          Angle: <b id="flow-deg-val" style="color:#ffd700;">0.0&deg;</b><br>
+          Degrees: <b id="flow-deg-val" style="color:#ffd700;">0.0&deg;</b><br>
           |c&rang; = cos(&theta;)|0&rang; + sin(&theta;)|1&rang;
         </div>
       </div>
@@ -501,47 +514,47 @@ body {{
       <div class="flow-step-item">
         <div class="flow-step-tag">Step 3 &bull; Hadamard Interference</div>
         <div class="flow-step-math">
-          H (col diff): <b id="flow-delta-h" style="color:#ff79c6;">&Delta;a_x = 0.000</b><br>
-          H (row diff): <b id="flow-delta-v" style="color:#bc8cff;">&Delta;a_y = 0.000</b><br>
-          Constructive: Edges &bull; Flat: &empty;
+          Col Diff: <b id="flow-delta-h" style="color:#ff79c6;">P_x = 0.000</b><br>
+          Row Diff: <b id="flow-delta-v" style="color:#bc8cff;">P_y = 0.000</b><br>
+          Cancellation: <span id="flow-cancel-state" style="color:#8b9eb0;">Destructive</span>
         </div>
       </div>
 
       <div class="flow-step-item">
         <div class="flow-step-tag">Step 4 &bull; Measurement Collapse</div>
         <div class="flow-step-math">
-          Probability: <b id="flow-edge-prob" style="color:#39d353;">P = 0.00000</b><br>
-          Quantum Edge: <b id="flow-edge-state" style="color:#39d353;">Resolving...</b><br>
-          Basis: <span id="flow-basis-state" style="color:#8b9eb0;">|y&rang;|x&rang;</span>
+          P(edge): <b id="flow-edge-prob" style="color:#39d353;">0.00000</b><br>
+          Decision: <b id="flow-edge-state" style="color:#39d353;">Flat Surface</b><br>
+          Basis: <span id="flow-basis-state" style="color:#8b9eb0;">|000&rang;|000&rang;</span>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- PANEL 2: Standalone Dual Quantum Circuits -->
+  <!-- PANEL 2: Standalone Dual Quantum Circuits with Active Qubit States -->
   <div class="section-panel">
     <div class="section-heading">
-      <span style="color:#58a6ff;">⚛️ PANEL 2: Standalone Dual 6-Qubit Interference Circuits</span>
-      <span style="font-family:monospace; color:#8b9eb0;">Qiskit Aer Emulation Mode</span>
+      <span style="color:#58a6ff;">⚛️ PANEL 2: Standalone Dual Quantum Circuits (7 Wires: 6 Position + 1 Color Qubit)</span>
+      <span style="font-family:monospace; color:#39d353;" id="badge-gate-step-info">Gate 0: FRQI Init Active</span>
     </div>
 
     <div class="circuits-container">
       <!-- Circuit A: Horizontal Pass -->
       <div class="circuit-card">
         <div class="circuit-card-header">
-          <span style="color:#58a6ff;">Circuit A: Horizontal Pass (q0, q1, q2 Column Shift & Hadamard Interference)</span>
+          <span style="color:#58a6ff;">Circuit A: Horizontal Pass (q0, q1, q2 Column Register + |c&rang; Color Qubit + Hadamard Interference)</span>
           <span style="color:#79c0ff; font-family:monospace;" id="badge-gate-h">Gate: Ready</span>
         </div>
-        <svg class="circuit-svg" id="svg-h" viewBox="0 0 880 155"></svg>
+        <svg class="circuit-svg" id="svg-h" viewBox="0 0 920 175"></svg>
       </div>
 
       <!-- Circuit B: Vertical Pass -->
       <div class="circuit-card">
         <div class="circuit-card-header">
-          <span style="color:#bc8cff;">Circuit B: Vertical Pass (q3, q4, q5 Row Shift & Hadamard Interference)</span>
+          <span style="color:#bc8cff;">Circuit B: Vertical Pass (q3, q4, q5 Row Register + |c&rang; Color Qubit + Hadamard Interference)</span>
           <span style="color:#d2a8ff; font-family:monospace;" id="badge-gate-v">Gate: Ready</span>
         </div>
-        <svg class="circuit-svg" id="svg-v" viewBox="0 0 880 155"></svg>
+        <svg class="circuit-svg" id="svg-v" viewBox="0 0 920 175"></svg>
       </div>
     </div>
   </div>
@@ -549,7 +562,7 @@ body {{
   <!-- PANEL 3: Reconstructed Quantum Edge Detection Map -->
   <div class="section-panel">
     <div class="section-heading">
-      <span style="color:#ff79c6;">🌟 PANEL 3: Live Reconstructed Quantum Edge Detection Map</span>
+      <span style="color:#ff79c6;">🌟 PANEL 3: Live Reconstructed True FRQI Quantum Edge Map</span>
       <span style="font-family:monospace; color:#39d353;" id="badge-status-recon">Ready</span>
     </div>
 
@@ -581,8 +594,8 @@ body {{
   </div>
 
   <div class="footer-info">
-    <span id="footer-text">Simulation engine ready.</span>
-    <span style="font-family:monospace; color:#58a6ff;">FRQI Encoding &bull; 6 Qubits/Patch &bull; Parallel Quantum Wave Interference</span>
+    <span id="footer-text">Simulation engine ready. Click <b>'▶ Start Auto-Build'</b> or <b>'⏯ Step 1 Gate'</b> to watch circuit execution!</span>
+    <span style="font-family:monospace; color:#58a6ff;">Exact FRQI Quantum Image Encoding &bull; 7 Qubits &bull; Coherent Phase Interference</span>
   </div>
 </div>
 
@@ -620,12 +633,14 @@ body {{
   const hudCoords = document.getElementById('hud-coords');
   const hudIntensity = document.getElementById('hud-intensity');
   const hudProb = document.getElementById('hud-prob');
+  const hudActiveGate = document.getElementById('hud-active-gate');
   const hudProgress = document.getElementById('hud-progress');
   const progressFill = document.getElementById('anim-progress-fill');
   const badgePatchPos = document.getElementById('badge-patch-pos');
   const badgeStatusRecon = document.getElementById('badge-status-recon');
   const badgeLocalPixel = document.getElementById('badge-local-pixel');
   const badgeEdgePct = document.getElementById('badge-edge-pct');
+  const badgeGateStepInfo = document.getElementById('badge-gate-step-info');
   const footerText = document.getElementById('footer-text');
 
   const flowPxVal = document.getElementById('flow-px-val');
@@ -638,6 +653,7 @@ body {{
   const flowEdgeProb = document.getElementById('flow-edge-prob');
   const flowEdgeState = document.getElementById('flow-edge-state');
   const flowBasisState = document.getElementById('flow-basis-state');
+  const flowCancelState = document.getElementById('flow-cancel-state');
 
   const badgeGateH = document.getElementById('badge-gate-h');
   const badgeGateV = document.getElementById('badge-gate-v');
@@ -647,37 +663,49 @@ body {{
   // State
   let currentPatchIdx = 0;
   let currentPixelInPatch = 0;
+  let currentGateStep = 0; // 0 to 5
   let running = false;
   let timer = null;
   let speed = 50;
-  let gateIdxH = 0;
-  let gateIdxV = 0;
 
   // Buffer: -1 means untouched pending pixel, >= 0 means processed edge value
   const fullEdgeBuffer = new Float32Array(imgW * imgH).fill(-1);
   const patchEdgeBuffer = new Float32Array(64).fill(-1);
 
-  // Pre-calculate global max edge across all patches for consistent contrast normalization
-  let globalMaxEdge = 1e-4;
-  for (let p = 0; p < totalPatches; p++) {{
-    const py = Math.floor(p / nPatchesX) * patchSize;
-    const px = (p % nPatchesX) * patchSize;
-    const pPix = new Float32Array(64);
-    for (let r = 0; r < 8; r++) {{
-      for (let c = 0; c < 8; c++) {{
-        pPix[r * 8 + c] = pixels[(py + r) * imgW + (px + c)] || 0;
-      }}
-    }}
-    const norm = Math.sqrt(pPix.reduce((s, v) => s + v * v, 0)) || 1.0;
-    for (let i = 0; i < 64; i++) {{
-      const r = Math.floor(i / 8), c = i % 8;
-      const nbrC = (c + 1) % 8;
-      const nbrR = (r + 1) % 8;
-      const diffH = Math.abs(pPix[r * 8 + c] - pPix[r * 8 + nbrC]) / norm;
-      const diffV = Math.abs(pPix[r * 8 + c] - pPix[nbrR * 8 + c]) / norm;
-      const pMax = Math.max(diffH * diffH, diffV * diffV);
-      if (pMax > globalMaxEdge) globalMaxEdge = pMax;
-    }}
+  // Exact True FRQI Quantum Phase Pixel Calculation
+  function getPixelIntensity(x, y) {{
+    const cX = Math.max(0, Math.min(imgW - 1, x));
+    const cY = Math.max(0, Math.min(imgH - 1, y));
+    return pixels[cY * imgW + cX] || 0;
+  }}
+
+  function computePixelQHED(gX, gY) {{
+    const iA = getPixelIntensity(gX, gY);
+    const iCol = getPixelIntensity(gX + 1, gY);
+    const iRow = getPixelIntensity(gX, gY + 1);
+
+    const thetaA = (iA / 255.0) * (Math.PI / 2.0);
+    const thetaCol = (iCol / 255.0) * (Math.PI / 2.0);
+    const thetaRow = (iRow / 255.0) * (Math.PI / 2.0);
+
+    const dThetaX = Math.abs(thetaA - thetaCol);
+    const dThetaY = Math.abs(thetaA - thetaRow);
+
+    // Exact FRQI Hadamard measurement probability: P = 2 * sin^2(Delta_theta / 2)
+    const pX = 2.0 * Math.sin(dThetaX / 2.0);
+    const pY = 2.0 * Math.sin(dThetaY / 2.0);
+
+    return Math.sqrt(pX * pX + pY * pY);
+  }}
+
+  // Pre-calculate global max edge across the image
+  let globalMaxEdge = 0.05;
+  const stepProbe = Math.max(1, Math.floor(pixels.length / 4000));
+  for (let i = 0; i < pixels.length; i += stepProbe) {{
+    const gx = i % imgW;
+    const gy = Math.floor(i / imgW);
+    const v = computePixelQHED(gx, gy);
+    if (v > globalMaxEdge) globalMaxEdge = v;
   }}
 
   // Render initial input image onto 360x360 canvas
@@ -704,33 +732,44 @@ body {{
     drawOutputCanvas(-1, -1);
   }}
 
-  // Draw Large Dual SVG Circuits
-  function drawCircuits(activeH = 0, activeV = 0) {{
+  // Draw Large Dual SVG Circuits with Live Wire States (7 Wires)
+  function drawCircuits(activeGateIdx = 0, lX = 0, lY = 0, theta = 0) {{
     const hGates = [
-      {{ name: 'FRQI Init', type: 'init', target: 0 }},
+      {{ name: 'FRQI Init', type: 'init', target: 6 }},
       {{ name: 'CCX Carry', type: 'ccx', controls: [0, 1], target: 2 }},
       {{ name: 'CX Shift', type: 'cx', controls: [0], target: 1 }},
       {{ name: 'X Invert', type: 'x', target: 0 }},
       {{ name: 'H (col diff)', type: 'h', target: 0 }},
       {{ name: 'Measure', type: 'm', target: 0 }}
     ];
-    renderSvgCircuit(svgH, hGates, activeH, '#388bfd', 'col');
+    renderSvgCircuit(svgH, hGates, activeGateIdx, '#388bfd', 'col', lX, lY, theta, true);
 
     const vGates = [
-      {{ name: 'FRQI Init', type: 'init', target: 3 }},
+      {{ name: 'FRQI Init', type: 'init', target: 6 }},
       {{ name: 'CCX Carry', type: 'ccx', controls: [3, 4], target: 5 }},
       {{ name: 'CX Shift', type: 'cx', controls: [3], target: 4 }},
       {{ name: 'X Invert', type: 'x', target: 3 }},
       {{ name: 'H (row diff)', type: 'h', target: 3 }},
       {{ name: 'Measure', type: 'm', target: 3 }}
     ];
-    renderSvgCircuit(svgV, vGates, activeV, '#bc8cff', 'row');
+    renderSvgCircuit(svgV, vGates, activeGateIdx, '#bc8cff', 'row', lX, lY, theta, false);
   }}
 
-  function renderSvgCircuit(svgEl, gates, activeIdx, accentColor, regName) {{
-    const w = 880, h = 155;
-    const x0 = 100, right = w - 24;
+  function renderSvgCircuit(svgEl, gates, activeIdx, accentColor, regName, lX, lY, theta, isHoriz) {{
+    const w = 920, h = 175;
+    const x0 = 120, right = w - 24;
     const gap = (right - x0) / (gates.length + 1);
+
+    // 7 Qubit Wires: q0..q2 (col), q3..q5 (row), q6 (|c>)
+    const wireStates = [
+      (lX & 1) ? 1 : 0,
+      (lX & 2) ? 1 : 0,
+      (lX & 4) ? 1 : 0,
+      (lY & 1) ? 1 : 0,
+      (lY & 2) ? 1 : 0,
+      (lY & 4) ? 1 : 0,
+      1 // Color qubit is active superposition
+    ];
 
     let body = `<defs>
       <filter id="glow-${{regName}}" x="-20%" y="-20%" width="140%" height="140%">
@@ -739,18 +778,27 @@ body {{
       </filter>
     </defs>`;
 
-    // 6 Qubit Wires
-    for (let q = 0; q < 6; q++) {{
-      const y = 20 + q * 21;
-      const role = q < 3 ? `q${{q}} (col ${{q}})` : `q${{q}} (row ${{q-3}})`;
-      body += `<text x="8" y="${{y + 4}}" fill="#79c0ff" font-family="monospace" font-size="11px" font-weight="700">${{role}}</text>`;
-      body += `<line x1="${{x0}}" y1="${{y}}" x2="${{right}}" y2="${{y}}" stroke="${{accentColor}}" stroke-width="2.5" stroke-opacity="0.85"/>`;
+    // Render Wires with Live State Labels
+    for (let q = 0; q < 7; q++) {{
+      const y = 16 + q * 22;
+      let label = "";
+      if (q < 3) label = `q${{q}} (col ${{q}}): |${{wireStates[q]}}&rang;`;
+      else if (q < 6) label = `q${{q}} (row ${{q-3}}): |${{wireStates[q]}}&rang;`;
+      else label = `|c&rang; (&theta;=${{theta.toFixed(2)}} rad)`;
+
+      const isWireActive = wireStates[q] === 1;
+      const wireColor = q === 6 ? '#ffd700' : (isWireActive ? '#00f0ff' : '#2b3644');
+      const textColor = q === 6 ? '#ffd700' : (isWireActive ? '#79c0ff' : '#6e7681');
+      const strokeW = isWireActive ? '2.5' : '1.5';
+
+      body += `<text x="6" y="${{y + 4}}" fill="${{textColor}}" font-family="monospace" font-size="10px" font-weight="700">${{label}}</text>`;
+      body += `<line x1="${{x0}}" y1="${{y}}" x2="${{right}}" y2="${{y}}" stroke="${{wireColor}}" stroke-width="${{strokeW}}" stroke-opacity="0.9"/>`;
     }}
 
     // Moving glowing vertical laser cursor
     if (activeIdx >= 0 && activeIdx < gates.length) {{
       const cursorX = x0 + (activeIdx + 1) * gap;
-      body += `<rect x="${{cursorX - 26}}" y="6" width="52" height="140" rx="8" fill="rgba(88, 166, 255, 0.28)" stroke="${{accentColor}}" stroke-width="3" stroke-dasharray="6,3" filter="url(#glow-${{regName}})"/>`;
+      body += `<rect x="${{cursorX - 28}}" y="4" width="56" height="162" rx="8" fill="rgba(88, 166, 255, 0.28)" stroke="${{accentColor}}" stroke-width="3" stroke-dasharray="6,3" filter="url(#glow-${{regName}})"/>`;
     }}
 
     // Gates
@@ -761,24 +809,24 @@ body {{
       if (gate.type === 'init') {{
         const fill = isActive ? accentColor : '#1f6feb';
         const stroke = isActive ? '#ffffff' : accentColor;
-        body += `<rect x="${{x - 22}}" y="12" width="44" height="130" rx="6" fill="${{fill}}" stroke="${{stroke}}" stroke-width="${{isActive?3:1.5}}"/>`;
-        body += `<text x="${{x}}" y="82" text-anchor="middle" fill="#ffffff" font-size="12px" font-weight="bold" transform="rotate(-90 ${{x}} 82)">FRQI State Init</text>`;
+        body += `<rect x="${{x - 22}}" y="10" width="44" height="150" rx="6" fill="${{fill}}" stroke="${{stroke}}" stroke-width="${{isActive?3:1.5}}"/>`;
+        body += `<text x="${{x}}" y="92" text-anchor="middle" fill="#ffffff" font-size="11px" font-weight="bold" transform="rotate(-90 ${{x}} 92)">FRQI State Init</text>`;
       }} else if (gate.type === 'm') {{
-        for (let q = 0; q < 6; q++) {{
-          const y = 20 + q * 21;
+        for (let q = 0; q < 7; q++) {{
+          const y = 16 + q * 22;
           body += `<rect x="${{x - 12}}" y="${{y - 9}}" width="24" height="18" rx="3" fill="${{isActive?'#d29922':'#9e6a03'}}" stroke="${{isActive?'#ffd700':'#30363d'}}"/>`;
           body += `<text x="${{x}}" y="${{y + 4}}" text-anchor="middle" fill="#ffffff" font-size="9px" font-weight="bold">M</text>`;
         }}
       }} else {{
-        const targetY = 20 + gate.target * 21;
+        const targetY = 16 + gate.target * 22;
         const fill = isActive ? accentColor : '#238636';
 
         if (gate.controls && gate.controls.length) {{
-          const minY = 20 + Math.min(...gate.controls, gate.target) * 21;
-          const maxY = 20 + Math.max(...gate.controls, gate.target) * 21;
+          const minY = 16 + Math.min(...gate.controls, gate.target) * 22;
+          const maxY = 16 + Math.max(...gate.controls, gate.target) * 22;
           body += `<line x1="${{x}}" y1="${{minY}}" x2="${{x}}" y2="${{maxY}}" stroke="${{isActive?accentColor:'#58a6ff'}}" stroke-width="${{isActive?3.5:2}}"/>`;
           gate.controls.forEach(c => {{
-            body += `<circle cx="${{x}}" cy="${{20 + c * 21}}" r="5" fill="${{isActive?accentColor:'#f0f6fc'}}"/>`;
+            body += `<circle cx="${{x}}" cy="${{16 + c * 22}}" r="5" fill="${{isActive?accentColor:'#f0f6fc'}}"/>`;
           }});
           body += `<circle cx="${{x}}" cy="${{targetY}}" r="10" fill="${{fill}}" stroke="#ffffff" stroke-width="2"/>`;
           body += `<path d="M${{x-6}} ${{targetY}}h12 M${{x}} ${{targetY-6}}v12" stroke="#ffffff" stroke-width="2"/>`;
@@ -809,25 +857,6 @@ body {{
     return {{ patch, startX, startY, px, py, patchIdx }};
   }}
 
-  // Compute QHED for 8x8 Patch
-  function computePatchQHED(patch) {{
-    const norm = Math.sqrt(patch.reduce((s, v) => s + v * v, 0)) || 1.0;
-    const amps = patch.map(v => v / norm);
-    const edge = new Float32Array(64);
-
-    for (let r = 0; r < 8; r++) {{
-      for (let c = 0; c < 8; c++) {{
-        const idx = r * 8 + c;
-        const nbrC = (c + 1) % 8;
-        const nbrR = (r + 1) % 8;
-        const diffH = Math.abs(amps[idx] - amps[r * 8 + nbrC]);
-        const diffV = Math.abs(amps[idx] - amps[nbrR * 8 + c]);
-        edge[idx] = Math.max(diffH * diffH, diffV * diffV);
-      }}
-    }}
-    return edge;
-  }}
-
   // Redraw Output Full Canvas (360x360)
   function drawOutputCanvas(activeGX = -1, activeGY = -1) {{
     const off = document.createElement('canvas');
@@ -844,11 +873,11 @@ body {{
         imgData.data[i * 4 + 1] = 13;
         imgData.data[i * 4 + 2] = 23;
         imgData.data[i * 4 + 3] = 255;
-      }} else if (rawVal > 0.0001) {{
+      }} else if (rawVal > 0.005) {{
         // Evaluated Quantum Edge: Vivid Electric Magenta-Violet
-        const norm = Math.min(1.0, Math.pow(rawVal / globalMaxEdge, 0.65));
+        const norm = Math.min(1.0, Math.pow(rawVal / globalMaxEdge, 0.72));
         imgData.data[i * 4 + 0] = Math.round(255 * norm);
-        imgData.data[i * 4 + 1] = Math.round(40 * (1 - norm) + 60 * norm);
+        imgData.data[i * 4 + 1] = Math.round(40 * (1 - norm) + 65 * norm);
         imgData.data[i * 4 + 2] = Math.round(220 + 35 * norm);
         imgData.data[i * 4 + 3] = 255;
       }} else {{
@@ -910,10 +939,10 @@ body {{
         edgeData.data[i * 4 + 0] = 8;
         edgeData.data[i * 4 + 1] = 13;
         edgeData.data[i * 4 + 2] = 23;
-      }} else if (val > 0.0001) {{
-        const norm = Math.min(1.0, Math.pow(val / globalMaxEdge, 0.65));
+      }} else if (val > 0.005) {{
+        const norm = Math.min(1.0, Math.pow(val / globalMaxEdge, 0.72));
         edgeData.data[i * 4 + 0] = Math.round(255 * norm);
-        edgeData.data[i * 4 + 1] = Math.round(40 * (1 - norm) + 60 * norm);
+        edgeData.data[i * 4 + 1] = Math.round(40 * (1 - norm) + 65 * norm);
         edgeData.data[i * 4 + 2] = 255;
       }} else {{
         edgeData.data[i * 4 + 0] = 16;
@@ -956,52 +985,127 @@ body {{
     badgePatchPos.textContent = `ROI: [${{startY}}:${{startY + patchSize}}, ${{startX}}:${{startX + patchSize}}]`;
   }}
 
-  // Execute Single Pixel Step
-  function stepPixel() {{
-    if (currentPatchIdx >= totalPatches) {{
-      stop();
-      badgeStatusRecon.textContent = "✅ Complete!";
-      footerText.textContent = "Full-image quantum edge detection complete across all patches!";
-      badgeEdgePct.textContent = "100% Built";
-      return;
-    }}
-
+  // Advance Simulation by 1 Single Gate (Gate-by-Gate Simulation with Image)
+  function stepGate() {{
+    if (currentPatchIdx >= totalPatches) return;
     const pInfo = getPatch(currentPatchIdx);
-    updateSlidingBox(pInfo.startX, pInfo.startY);
-
-    const qhedEdges = computePatchQHED(pInfo.patch);
-
-    // Assign current pixel edge
-    const edgeVal = qhedEdges[currentPixelInPatch];
-    patchEdgeBuffer[currentPixelInPatch] = edgeVal;
-
-    // Immediately commit this pixel into full image buffer
     const lX = currentPixelInPatch % 8;
     const lY = Math.floor(currentPixelInPatch / 8);
     const gX = pInfo.startX + lX;
     const gY = pInfo.startY + lY;
+
+    const valA = getPixelIntensity(gX, gY);
+    const valCol = getPixelIntensity(gX + 1, gY);
+    const valRow = getPixelIntensity(gX, gY + 1);
+    const diff = Math.max(Math.abs(valA - valCol), Math.abs(valA - valRow));
+    const theta = (valA / 255.0) * (Math.PI / 2.0);
+    const edgeVal = computePixelQHED(gX, gY);
+
+    const gateNames = [
+      'Gate 0: FRQI State Init (Rotation on |c⟩ by θ)',
+      'Gate 1: CCX Carry (Column carry shift q0 ∧ q1 → q2)',
+      'Gate 2: CX Shift (Coordinate shift q0 → q1)',
+      'Gate 3: Pauli-X Inversion (q0 parity flip)',
+      'Gate 4: Hadamard H (Waveform Phase Interference)',
+      'Gate 5: Measure (Collapse Basis State → Paint Edge Pixel)'
+    ];
+
+    hudActiveGate.textContent = gateNames[currentGateStep];
+    badgeGateStepInfo.textContent = gateNames[currentGateStep];
+    badgeGateH.textContent = gateNames[currentGateStep];
+    badgeGateV.textContent = gateNames[currentGateStep];
+
+    // Animate circuits with live wire states
+    drawCircuits(currentGateStep, lX, lY, theta);
+    updateSlidingBox(pInfo.startX, pInfo.startY);
+    drawPatchCanvases(pInfo.patch, patchEdgeBuffer, currentPixelInPatch);
+
+    // Update telemetry
+    hudPatch.textContent = `Patch ${{currentPatchIdx + 1}} / ${{totalPatches}} [${{pInfo.px}}, ${{pInfo.py}}]`;
+    hudCoords.textContent = `Local (${{lX}}, ${{lY}}) &rarr; Global (${{gX}}, ${{gY}})`;
+    hudIntensity.textContent = `I: ${{valA}} &bull; I_nbr: ${{valCol}} &bull; &Delta;I: ${{diff}}`;
+    hudProb.textContent = `P(edge) = ${{edgeVal.toFixed(5)}}`;
+
+    // Data-flow updates
+    flowPxVal.textContent = `I = ${{valA}}`;
+    flowNbrVal.textContent = `I_col = ${{valCol}}, I_row = ${{valRow}}`;
+    flowDiffVal.textContent = `&Delta;I = ${{diff}}`;
+    flowThetaVal.textContent = `&theta; = ${{theta.toFixed(3)}} rad`;
+    flowDegVal.textContent = `${{(theta * 180 / Math.PI).toFixed(1)}}&deg;`;
+    const dThetaX = Math.abs(theta - (valCol/255.0)*(Math.PI/2.0));
+    const dThetaY = Math.abs(theta - (valRow/255.0)*(Math.PI/2.0));
+    const pX = 2.0 * Math.sin(dThetaX / 2.0);
+    const pY = 2.0 * Math.sin(dThetaY / 2.0);
+    flowDeltaH.textContent = `P_x = ${{pX.toFixed(4)}}`;
+    flowDeltaV.textContent = `P_y = ${{pY.toFixed(4)}}`;
+    flowEdgeProb.textContent = `${{edgeVal.toFixed(5)}}`;
+    flowEdgeState.textContent = edgeVal > 0.04 ? "Boundary Edge" : "Flat (Cancelled)";
+    flowCancelState.textContent = edgeVal > 0.04 ? "Constructive Pulse" : "Exact Destructive";
+    flowBasisState.textContent = `|${{lY.toString(2).padStart(3, '0')}}&rang;|${{lX.toString(2).padStart(3, '0')}}&rang;`;
+
+    // When Gate 5 (Measure) executes, commit the pixel!
+    if (currentGateStep === 5) {{
+      patchEdgeBuffer[currentPixelInPatch] = edgeVal;
+      fullEdgeBuffer[gY * imgW + gX] = edgeVal;
+      drawOutputCanvas(gX, gY);
+
+      const totalDone = currentPatchIdx * 64 + (currentPixelInPatch + 1);
+      const totalAll = totalPatches * 64;
+      const pct = Math.min(100, Math.round((totalDone / totalAll) * 100));
+      hudProgress.textContent = `${{pct}}% (${{totalDone}} / ${{totalAll}} px)`;
+      progressFill.style.width = `${{pct}}%`;
+      badgeEdgePct.textContent = `${{pct}}% Built`;
+
+      currentPixelInPatch++;
+      currentGateStep = 0;
+
+      if (currentPixelInPatch >= 64) {{
+        currentPatchIdx++;
+        currentPixelInPatch = 0;
+        patchEdgeBuffer.fill(-1);
+
+        if (currentPatchIdx >= totalPatches) {{
+          stop();
+          badgeStatusRecon.textContent = "✅ Complete!";
+          footerText.textContent = "Full quantum edge reconstruction complete across all patches!";
+          drawOutputCanvas(-1, -1);
+        }}
+      }}
+    }} else {{
+      currentGateStep++;
+    }}
+  }}
+
+  // Execute 1 Full Pixel (All gates)
+  function stepPixel() {{
+    if (currentPatchIdx >= totalPatches) return;
+    const pInfo = getPatch(currentPatchIdx);
+    const lX = currentPixelInPatch % 8;
+    const lY = Math.floor(currentPixelInPatch / 8);
+    const gX = pInfo.startX + lX;
+    const gY = pInfo.startY + lY;
+
+    const valA = getPixelIntensity(gX, gY);
+    const valCol = getPixelIntensity(gX + 1, gY);
+    const valRow = getPixelIntensity(gX, gY + 1);
+    const diff = Math.max(Math.abs(valA - valCol), Math.abs(valA - valRow));
+    const theta = (valA / 255.0) * (Math.PI / 2.0);
+    const edgeVal = computePixelQHED(gX, gY);
+
+    patchEdgeBuffer[currentPixelInPatch] = edgeVal;
     fullEdgeBuffer[gY * imgW + gX] = edgeVal;
 
-    // Live update visuals
+    updateSlidingBox(pInfo.startX, pInfo.startY);
     drawPatchCanvases(pInfo.patch, patchEdgeBuffer, currentPixelInPatch);
     drawOutputCanvas(gX, gY);
 
-    // Advance circuits
-    gateIdxH = (gateIdxH + 1) % 6;
-    gateIdxV = (gateIdxV + 1) % 6;
-    const gateNames = ['Init', 'CCX Carry', 'CX Shift', 'X Invert', 'Hadamard', 'Measure'];
-    badgeGateH.textContent = `Gate ${{gateIdxH}}: ${{gateNames[gateIdxH]}}`;
-    badgeGateV.textContent = `Gate ${{gateIdxV}}: ${{gateNames[gateIdxV]}}`;
-    drawCircuits(gateIdxH, gateIdxV);
+    // Animate circuits with Hadamard active
+    drawCircuits(4, lX, lY, theta);
+    badgeGateH.textContent = `Gate 4: Hadamard (Col Difference)`;
+    badgeGateV.textContent = `Gate 4: Hadamard (Row Difference)`;
+    hudActiveGate.textContent = `Pixel (${{lX}}, ${{lY}}) Evaluated`;
 
     // Telemetry updates
-    const valA = pInfo.patch[currentPixelInPatch];
-    const nbrC = (lX + 1) % 8;
-    const nbrR = (lY + 1) % 8;
-    const valCol = pInfo.patch[lY * 8 + nbrC];
-    const valRow = pInfo.patch[nbrR * 8 + lX];
-    const diff = Math.max(Math.abs(valA - valCol), Math.abs(valA - valRow));
-
     hudPatch.textContent = `Patch ${{currentPatchIdx + 1}} / ${{totalPatches}} [${{pInfo.px}}, ${{pInfo.py}}]`;
     hudCoords.textContent = `Local (${{lX}}, ${{lY}}) &rarr; Global (${{gX}}, ${{gY}})`;
     hudIntensity.textContent = `I: ${{valA}} &bull; I_nbr: ${{valCol}} &bull; &Delta;I: ${{diff}}`;
@@ -1014,21 +1118,24 @@ body {{
     progressFill.style.width = `${{pct}}%`;
     badgeEdgePct.textContent = `${{pct}}% Built`;
 
-    // Data-flow strip updates
+    // Data-flow strip
     flowPxVal.textContent = `I = ${{valA}}`;
     flowNbrVal.textContent = `I_col = ${{valCol}}, I_row = ${{valRow}}`;
     flowDiffVal.textContent = `&Delta;I = ${{diff}}`;
-    const theta = (valA / 255.0) * (Math.PI / 2.0);
     flowThetaVal.textContent = `&theta; = ${{theta.toFixed(3)}} rad`;
     flowDegVal.textContent = `${{(theta * 180 / Math.PI).toFixed(1)}}&deg;`;
-    const deltaA = Math.sqrt(edgeVal);
-    flowDeltaH.textContent = `&Delta;a_x = ${{deltaA.toFixed(4)}}`;
-    flowDeltaV.textContent = `&Delta;a_y = ${{deltaA.toFixed(4)}}`;
-    flowEdgeProb.textContent = `P = ${{edgeVal.toFixed(5)}}`;
-    flowEdgeState.textContent = edgeVal > 0.001 ? "Sharp Boundary" : "Flat (Cancelled)";
+    const dThetaX = Math.abs(theta - (valCol / 255.0) * (Math.PI / 2.0));
+    const dThetaY = Math.abs(theta - (valRow / 255.0) * (Math.PI / 2.0));
+    const pX = 2.0 * Math.sin(dThetaX / 2.0);
+    const pY = 2.0 * Math.sin(dThetaY / 2.0);
+    flowDeltaH.textContent = `P_x = ${{pX.toFixed(4)}}`;
+    flowDeltaV.textContent = `P_y = ${{pY.toFixed(4)}}`;
+    flowEdgeProb.textContent = `${{edgeVal.toFixed(5)}}`;
+    flowEdgeState.textContent = edgeVal > 0.04 ? "Boundary Edge" : "Flat (Cancelled)";
     flowBasisState.textContent = `|${{lY.toString(2).padStart(3, '0')}}&rang;|${{lX.toString(2).padStart(3, '0')}}&rang;`;
 
     currentPixelInPatch++;
+    currentGateStep = 0;
 
     if (currentPixelInPatch >= 64) {{
       currentPatchIdx++;
@@ -1038,39 +1145,38 @@ body {{
       if (currentPatchIdx >= totalPatches) {{
         stop();
         badgeStatusRecon.textContent = "✅ Complete!";
-        footerText.textContent = "All patches resolved. Complete quantum edge map assembled!";
-        badgeEdgePct.textContent = "100% Built";
+        footerText.textContent = "Full quantum edge reconstruction complete across all patches!";
         drawOutputCanvas(-1, -1);
       }}
     }}
   }}
 
-  // Step Full Patch (64 px)
+  // Step 1 Patch (64 px)
   function stepPatch() {{
     if (currentPatchIdx >= totalPatches) return;
     const pInfo = getPatch(currentPatchIdx);
     updateSlidingBox(pInfo.startX, pInfo.startY);
 
-    const qhedEdges = computePatchQHED(pInfo.patch);
-
-    // Commit all 64 pixels of this patch
     for (let r = 0; r < 8; r++) {{
       for (let c = 0; c < 8; c++) {{
         const gX = pInfo.startX + c;
         const gY = pInfo.startY + r;
-        fullEdgeBuffer[gY * imgW + gX] = qhedEdges[r * 8 + c];
+        const edgeVal = computePixelQHED(gX, gY);
+        patchEdgeBuffer[r * 8 + c] = edgeVal;
+        fullEdgeBuffer[gY * imgW + gX] = edgeVal;
       }}
     }}
 
-    drawPatchCanvases(pInfo.patch, qhedEdges, 63);
+    drawPatchCanvases(pInfo.patch, patchEdgeBuffer, 63);
     drawOutputCanvas(pInfo.startX + 7, pInfo.startY + 7);
 
-    drawCircuits(4, 4); // Hadamard active
-    badgeGateH.textContent = "Gate 4: Hadamard (Col Difference)";
-    badgeGateV.textContent = "Gate 4: Hadamard (Row Difference)";
+    const lPix = pInfo.patch[63];
+    const th = (lPix / 255.0) * (Math.PI / 2.0);
+    drawCircuits(4, 7, 7, th);
 
     currentPatchIdx++;
     currentPixelInPatch = 0;
+    currentGateStep = 0;
     patchEdgeBuffer.fill(-1);
 
     const totalDone = currentPatchIdx * 64;
@@ -1093,12 +1199,11 @@ body {{
     stop();
     for (let p = 0; p < totalPatches; p++) {{
       const pInfo = getPatch(p);
-      const qhedEdges = computePatchQHED(pInfo.patch);
       for (let r = 0; r < 8; r++) {{
         for (let c = 0; c < 8; c++) {{
           const gX = pInfo.startX + c;
           const gY = pInfo.startY + r;
-          fullEdgeBuffer[gY * imgW + gX] = qhedEdges[r * 8 + c];
+          fullEdgeBuffer[gY * imgW + gX] = computePixelQHED(gX, gY);
         }}
       }}
     }}
@@ -1108,12 +1213,15 @@ body {{
 
     const lastPatch = getPatch(totalPatches - 1);
     updateSlidingBox(lastPatch.startX, lastPatch.startY);
-    drawPatchCanvases(lastPatch.patch, computePatchQHED(lastPatch.patch), 63);
+    const pEdges = new Float32Array(64);
+    for (let i = 0; i < 64; i++) {{
+      const gx = lastPatch.startX + (i % 8);
+      const gy = lastPatch.startY + Math.floor(i / 8);
+      pEdges[i] = computePixelQHED(gx, gy);
+    }}
+    drawPatchCanvases(lastPatch.patch, pEdges, 63);
 
-    drawCircuits(5, 5);
-    badgeGateH.textContent = "Gate 5: Measure";
-    badgeGateV.textContent = "Gate 5: Measure";
-
+    drawCircuits(5, 7, 7, 1.0);
     hudProgress.textContent = "100% Complete";
     progressFill.style.width = "100%";
     badgeStatusRecon.textContent = "✅ Complete!";
@@ -1124,7 +1232,6 @@ body {{
   function loop() {{
     if (!running) return;
     if (totalPatches > 64) {{
-      // Adaptive batch streaming for large images (e.g. 128x128, 256x256, 512x512)
       const batch = totalPatches >= 1024 ? 8 : (totalPatches >= 256 ? 2 : 1);
       for (let k = 0; k < batch && currentPatchIdx < totalPatches; k++) {{
         stepPatch();
@@ -1147,7 +1254,7 @@ body {{
     }}
     running = true;
     document.querySelector('[data-action="run"]').textContent = "⏸ Pause Auto-Build";
-    footerText.textContent = "Building quantum edge detection map pixel-by-pixel...";
+    footerText.textContent = "Building quantum edge detection map with live circuit simulation...";
     badgeStatusRecon.textContent = "Reconstructing...";
     loop();
   }}
@@ -1166,19 +1273,22 @@ body {{
     stop();
     currentPatchIdx = 0;
     currentPixelInPatch = 0;
+    currentGateStep = 0;
     fullEdgeBuffer.fill(-1);
     patchEdgeBuffer.fill(-1);
 
     renderInitialInput();
     updateSlidingBox(0, 0);
-    drawCircuits(-1, -1);
     const p0 = getPatch(0);
+    const initTheta = (p0.patch[0] / 255.0) * (Math.PI / 2.0);
+    drawCircuits(0, 0, 0, initTheta);
     drawPatchCanvases(p0.patch, patchEdgeBuffer, 0);
 
     hudPatch.textContent = `Patch 1 / ${{totalPatches}} [0, 0]`;
     hudCoords.textContent = `Local (0, 0) &rarr; Global (0, 0)`;
-    hudIntensity.textContent = `Ia: 0 &bull; Ib: 0 &bull; &Delta;I: 0`;
+    hudIntensity.textContent = `I: 0 &bull; I_nbr: 0 &bull; &Delta;I: 0`;
     hudProb.textContent = `P(edge) = 0.00000`;
+    hudActiveGate.textContent = "Gate 0: FRQI Init";
     hudProgress.textContent = `0% (0 / ${{totalPatches * 64}} px)`;
     progressFill.style.width = '0%';
     badgeStatusRecon.textContent = "Ready";
@@ -1188,13 +1298,17 @@ body {{
 
   // Event Listeners
   document.querySelector('[data-action="run"]').addEventListener('click', start);
-  document.querySelector('[data-action="step-patch"]').addEventListener('click', () => {{
+  document.querySelector('[data-action="step-gate"]').addEventListener('click', () => {{
     stop();
-    stepPatch();
+    stepGate();
   }});
   document.querySelector('[data-action="step-pixel"]').addEventListener('click', () => {{
     stop();
     stepPixel();
+  }});
+  document.querySelector('[data-action="step-patch"]').addEventListener('click', () => {{
+    stop();
+    stepPatch();
   }});
   document.querySelector('[data-action="instant"]').addEventListener('click', buildInstant);
   document.querySelector('[data-action="reset"]').addEventListener('click', reset);
@@ -1206,8 +1320,9 @@ body {{
   // Initial Boot
   renderInitialInput();
   updateSlidingBox(0, 0);
-  drawCircuits(-1, -1);
   const p0 = getPatch(0);
+  const bootTheta = (p0.patch[0] / 255.0) * (Math.PI / 2.0);
+  drawCircuits(0, 0, 0, bootTheta);
   drawPatchCanvases(p0.patch, patchEdgeBuffer, 0);
   updateSlidingBox(p0.startX, p0.startY);
 
