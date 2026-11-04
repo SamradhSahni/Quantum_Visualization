@@ -985,6 +985,15 @@ body {{
     badgePatchPos.textContent = `ROI: [${{startY}}:${{startY + patchSize}}, ${{startX}}:${{startX + patchSize}}]`;
   }}
 
+  const gateNames = [
+    'Gate 0: FRQI State Init (Rotation on |c⟩ by θ)',
+    'Gate 1: CCX Carry (Column carry shift q0 ∧ q1 → q2)',
+    'Gate 2: CX Shift (Coordinate shift q0 → q1)',
+    'Gate 3: Pauli-X Inversion (q0 parity flip)',
+    'Gate 4: Hadamard H (Waveform Phase Interference)',
+    'Gate 5: Measure (Collapse Basis State → Paint Edge Pixel)'
+  ];
+
   // Advance Simulation by 1 Single Gate (Gate-by-Gate Simulation with Image)
   function stepGate() {{
     if (currentPatchIdx >= totalPatches) return;
@@ -1000,15 +1009,6 @@ body {{
     const diff = Math.max(Math.abs(valA - valCol), Math.abs(valA - valRow));
     const theta = (valA / 255.0) * (Math.PI / 2.0);
     const edgeVal = computePixelQHED(gX, gY);
-
-    const gateNames = [
-      'Gate 0: FRQI State Init (Rotation on |c⟩ by θ)',
-      'Gate 1: CCX Carry (Column carry shift q0 ∧ q1 → q2)',
-      'Gate 2: CX Shift (Coordinate shift q0 → q1)',
-      'Gate 3: Pauli-X Inversion (q0 parity flip)',
-      'Gate 4: Hadamard H (Waveform Phase Interference)',
-      'Gate 5: Measure (Collapse Basis State → Paint Edge Pixel)'
-    ];
 
     hudActiveGate.textContent = gateNames[currentGateStep];
     badgeGateStepInfo.textContent = gateNames[currentGateStep];
@@ -1032,8 +1032,8 @@ body {{
     flowDiffVal.textContent = `&Delta;I = ${{diff}}`;
     flowThetaVal.textContent = `&theta; = ${{theta.toFixed(3)}} rad`;
     flowDegVal.textContent = `${{(theta * 180 / Math.PI).toFixed(1)}}&deg;`;
-    const dThetaX = Math.abs(theta - (valCol/255.0)*(Math.PI/2.0));
-    const dThetaY = Math.abs(theta - (valRow/255.0)*(Math.PI/2.0));
+    const dThetaX = Math.abs(theta - (valCol / 255.0) * (Math.PI / 2.0));
+    const dThetaY = Math.abs(theta - (valRow / 255.0) * (Math.PI / 2.0));
     const pX = 2.0 * Math.sin(dThetaX / 2.0);
     const pY = 2.0 * Math.sin(dThetaY / 2.0);
     flowDeltaH.textContent = `P_x = ${{pX.toFixed(4)}}`;
@@ -1076,7 +1076,7 @@ body {{
     }}
   }}
 
-  // Execute 1 Full Pixel (All gates)
+  // Execute 1 Full Pixel (Cycle gates synchronously with pixel)
   function stepPixel() {{
     if (currentPatchIdx >= totalPatches) return;
     const pInfo = getPatch(currentPatchIdx);
@@ -1099,11 +1099,13 @@ body {{
     drawPatchCanvases(pInfo.patch, patchEdgeBuffer, currentPixelInPatch);
     drawOutputCanvas(gX, gY);
 
-    // Animate circuits with Hadamard active
-    drawCircuits(4, lX, lY, theta);
-    badgeGateH.textContent = `Gate 4: Hadamard (Col Difference)`;
-    badgeGateV.textContent = `Gate 4: Hadamard (Row Difference)`;
-    hudActiveGate.textContent = `Pixel (${{lX}}, ${{lY}}) Evaluated`;
+    // Actively cycle gates across 0..5 as pixels advance
+    currentGateStep = (currentGateStep + 1) % 6;
+    drawCircuits(currentGateStep, lX, lY, theta);
+    badgeGateH.textContent = gateNames[currentGateStep];
+    badgeGateV.textContent = gateNames[currentGateStep];
+    hudActiveGate.textContent = gateNames[currentGateStep];
+    badgeGateStepInfo.textContent = `${{gateNames[currentGateStep]}} &bull; Pixel (${{lX}}, ${{lY}})`;
 
     // Telemetry updates
     hudPatch.textContent = `Patch ${{currentPatchIdx + 1}} / ${{totalPatches}} [${{pInfo.px}}, ${{pInfo.py}}]`;
@@ -1135,7 +1137,6 @@ body {{
     flowBasisState.textContent = `|${{lY.toString(2).padStart(3, '0')}}&rang;|${{lX.toString(2).padStart(3, '0')}}&rang;`;
 
     currentPixelInPatch++;
-    currentGateStep = 0;
 
     if (currentPixelInPatch >= 64) {{
       currentPatchIdx++;
@@ -1151,33 +1152,73 @@ body {{
     }}
   }}
 
-  // Step 1 Patch (64 px)
+  // Step 1 Patch (64 px) with Active Gate Simulation
   function stepPatch() {{
     if (currentPatchIdx >= totalPatches) return;
     const pInfo = getPatch(currentPatchIdx);
     updateSlidingBox(pInfo.startX, pInfo.startY);
 
+    // Cycle through representative pixels in this patch so wires actively change
+    const activePix = (currentPatchIdx * 11 + currentPixelInPatch) % 64;
+    const lX = activePix % 8;
+    const lY = Math.floor(activePix / 8);
+    const gX = pInfo.startX + lX;
+    const gY = pInfo.startY + lY;
+    const valA = getPixelIntensity(gX, gY);
+    const valCol = getPixelIntensity(gX + 1, gY);
+    const valRow = getPixelIntensity(gX, gY + 1);
+    const diff = Math.max(Math.abs(valA - valCol), Math.abs(valA - valRow));
+    const theta = (valA / 255.0) * (Math.PI / 2.0);
+    const activeEdgeVal = computePixelQHED(gX, gY);
+
+    patchEdgeBuffer.fill(-1);
     for (let r = 0; r < 8; r++) {{
       for (let c = 0; c < 8; c++) {{
-        const gX = pInfo.startX + c;
-        const gY = pInfo.startY + r;
-        const edgeVal = computePixelQHED(gX, gY);
+        const gx = pInfo.startX + c;
+        const gy = pInfo.startY + r;
+        const edgeVal = computePixelQHED(gx, gy);
         patchEdgeBuffer[r * 8 + c] = edgeVal;
-        fullEdgeBuffer[gY * imgW + gX] = edgeVal;
+        fullEdgeBuffer[gy * imgW + gx] = edgeVal;
       }}
     }}
 
-    drawPatchCanvases(pInfo.patch, patchEdgeBuffer, 63);
-    drawOutputCanvas(pInfo.startX + 7, pInfo.startY + 7);
+    drawPatchCanvases(pInfo.patch, patchEdgeBuffer, activePix);
+    drawOutputCanvas(gX, gY);
 
-    const lPix = pInfo.patch[63];
-    const th = (lPix / 255.0) * (Math.PI / 2.0);
-    drawCircuits(4, 7, 7, th);
+    // Cycle through all 6 gates on the circuits
+    currentGateStep = (currentGateStep + 1) % 6;
+    drawCircuits(currentGateStep, lX, lY, theta);
 
+    hudActiveGate.textContent = gateNames[currentGateStep];
+    badgeGateStepInfo.textContent = `${{gateNames[currentGateStep]}} &bull; Patch [${{pInfo.px}}, ${{pInfo.py}}]`;
+    badgeGateH.textContent = gateNames[currentGateStep];
+    badgeGateV.textContent = gateNames[currentGateStep];
+
+    // Telemetry updates for patch
+    hudPatch.textContent = `Patch ${{currentPatchIdx + 1}} / ${{totalPatches}} [${{pInfo.px}}, ${{pInfo.py}}]`;
+    hudCoords.textContent = `Local (${{lX}}, ${{lY}}) &rarr; Global (${{gX}}, ${{gY}})`;
+    hudIntensity.textContent = `I: ${{valA}} &bull; I_nbr: ${{valCol}} &bull; &Delta;I: ${{diff}}`;
+    hudProb.textContent = `P(edge) = ${{activeEdgeVal.toFixed(5)}}`;
+
+    // Data-flow strip
+    flowPxVal.textContent = `I = ${{valA}}`;
+    flowNbrVal.textContent = `I_col = ${{valCol}}, I_row = ${{valRow}}`;
+    flowDiffVal.textContent = `&Delta;I = ${{diff}}`;
+    flowThetaVal.textContent = `&theta; = ${{theta.toFixed(3)}} rad`;
+    flowDegVal.textContent = `${{(theta * 180 / Math.PI).toFixed(1)}}&deg;`;
+    const dThetaX = Math.abs(theta - (valCol / 255.0) * (Math.PI / 2.0));
+    const dThetaY = Math.abs(theta - (valRow / 255.0) * (Math.PI / 2.0));
+    const pX = 2.0 * Math.sin(dThetaX / 2.0);
+    const pY = 2.0 * Math.sin(dThetaY / 2.0);
+    flowDeltaH.textContent = `P_x = ${{pX.toFixed(4)}}`;
+    flowDeltaV.textContent = `P_y = ${{pY.toFixed(4)}}`;
+    flowEdgeProb.textContent = `${{activeEdgeVal.toFixed(5)}}`;
+    flowEdgeState.textContent = activeEdgeVal > 0.04 ? "Boundary Edge" : "Flat (Cancelled)";
+    flowCancelState.textContent = activeEdgeVal > 0.04 ? "Constructive Pulse" : "Exact Destructive";
+    flowBasisState.textContent = `|${{lY.toString(2).padStart(3, '0')}}&rang;|${{lX.toString(2).padStart(3, '0')}}&rang;`;
+
+    currentPixelInPatch = (currentPixelInPatch + 1) % 64;
     currentPatchIdx++;
-    currentPixelInPatch = 0;
-    currentGateStep = 0;
-    patchEdgeBuffer.fill(-1);
 
     const totalDone = currentPatchIdx * 64;
     const totalAll = totalPatches * 64;
@@ -1221,7 +1262,12 @@ body {{
     }}
     drawPatchCanvases(lastPatch.patch, pEdges, 63);
 
-    drawCircuits(5, 7, 7, 1.0);
+    drawCircuits(5, 4, 4, 1.0);
+    hudActiveGate.textContent = "Gate 5: Measure (Complete)";
+    badgeGateStepInfo.textContent = "All Gates Evaluated & Measured";
+    badgeGateH.textContent = "Gate 5: Measure";
+    badgeGateV.textContent = "Gate 5: Measure";
+
     hudProgress.textContent = "100% Complete";
     progressFill.style.width = "100%";
     badgeStatusRecon.textContent = "✅ Complete!";

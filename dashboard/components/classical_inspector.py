@@ -68,18 +68,9 @@ def render_classical_inspector(sobel_data, canny_data, robinson_data, x, y, subm
 
         with col_m1:
             st.markdown("**Neighborhood Submatrix $A$ and Sobel Kernels $K_x, K_y$:**")
-            st.latex(r"""
-            K_x = \begin{bmatrix} -1 & 0 & +1 \\ -2 & 0 & +2 \\ -1 & 0 & +1 \end{bmatrix}, \quad
-            K_y = \begin{bmatrix} -1 & -2 & -1 \\ 0 & 0 & 0 \\ +1 & +2 & +1 \end{bmatrix}
-            """)
-            st.markdown(f"""
-            Actual $3\\times 3$ values around $({x}, {y})$:
-            $$\\begin{{bmatrix}}
-            {submat[0,0]:.1f} & {submat[0,1]:.1f} & {submat[0,2]:.1f} \\\\
-            {submat[1,0]:.1f} & {submat[1,1]:.1f} & {submat[1,2]:.1f} \\\\
-            {submat[2,0]:.1f} & {submat[2,1]:.1f} & {submat[2,2]:.1f}
-            \\end{{bmatrix}}$$
-            """)
+            st.latex(r"K_x = \begin{bmatrix} -1 & 0 & 1 \\ -2 & 0 & 2 \\ -1 & 0 & 1 \end{bmatrix}, \quad K_y = \begin{bmatrix} -1 & -2 & -1 \\ 0 & 0 & 0 \\ 1 & 2 & 1 \end{bmatrix}")
+            st.markdown(f"Actual $3\\times 3$ values around $({x}, {y})$:")
+            st.latex(rf"\begin{{bmatrix}} {submat[0,0]:.1f} & {submat[0,1]:.1f} & {submat[0,2]:.1f} \\ {submat[1,0]:.1f} & {submat[1,1]:.1f} & {submat[1,2]:.1f} \\ {submat[2,0]:.1f} & {submat[2,1]:.1f} & {submat[2,2]:.1f} \end{bmatrix}")
 
         with col_m2:
             st.markdown("**Live Element-Wise Convolution Product & Angle:**")
