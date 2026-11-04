@@ -13,10 +13,10 @@ Provides:
 import json
 import numpy as np
 
-def get_full_image_animator_html(image_2d, patch_size=8, auto_start=True):
+def get_full_image_animator_html(image_2d, patch_size=8, auto_start=True, *args, **kwargs):
     """
     Generates standalone HTML string for full-image patch-by-patch quantum edge detection.
-    image_2d: 2D numpy array of shape (H, W), dtype uint8 or float [0, 255].
+    image_2d: 2D numpy array of shape (H, W), dtype uint8 or float [0, 255]. Supports up to 512x512.
     patch_size: size of quantum patch (default 8 for 6-qubit circuit).
     auto_start: whether the simulation starts building immediately on load.
     """
@@ -1123,7 +1123,15 @@ body {{
 
   function loop() {{
     if (!running) return;
-    stepPixel();
+    if (totalPatches > 64) {{
+      // Adaptive batch streaming for large images (e.g. 128x128, 256x256, 512x512)
+      const batch = totalPatches >= 1024 ? 8 : (totalPatches >= 256 ? 2 : 1);
+      for (let k = 0; k < batch && currentPatchIdx < totalPatches; k++) {{
+        stepPatch();
+      }}
+    }} else {{
+      stepPixel();
+    }}
     if (running && currentPatchIdx < totalPatches) {{
       timer = setTimeout(loop, speed);
     }}

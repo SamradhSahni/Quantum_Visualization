@@ -20,8 +20,15 @@ from PIL import Image
 from pathlib import Path
 import matplotlib.pyplot as plt
 import pandas as pd
+import importlib
+import tifffile
 
+import dashboard.components.full_image_circuit_animator as fica
+importlib.reload(fica)
 from dashboard.components.full_image_circuit_animator import get_full_image_animator_html
+
+import dashboard.components.math_helpers as mh
+importlib.reload(mh)
 from dashboard.components.math_helpers import (
     run_sobel_full,
     run_canny_full,
@@ -74,16 +81,16 @@ st.markdown("""
 
 
 # -----------------------------------------------------------------------------
-# Sidebar: Image Upload & Dimension Selection
+# Sidebar: Image Upload & Dimension Selection (Full 512x512 Support)
 # -----------------------------------------------------------------------------
 with st.sidebar:
     st.markdown("## ⚙️ Image & Processing Controls")
-    st.markdown("Upload your image or pick a preset to watch the quantum & classical pipelines execute step-by-step.")
+    st.markdown("Upload any image up to **512×512** or pick a lunar preset to watch the full quantum & classical edge pipelines execute.")
 
     source_type = st.radio(
         "Select Image Source",
-        ["Upload Custom Image", "Preset Lunar Crater", "Preset Sharp Synthetic Rim"],
-        index=1
+        ["Preset Lunar GeoTIFF (512×512)", "Upload Custom Image", "Preset Apollo Crater (32×32)", "Preset Synthetic Rim"],
+        index=0
     )
 
     full_image_raw = None
@@ -92,7 +99,7 @@ with st.sidebar:
     if source_type == "Upload Custom Image":
         st.markdown("#### 📤 Upload Grayscale / RGB Image")
         uploaded_file = st.file_uploader(
-            "Choose an image file",
+            "Choose an image file (supports up to 512×512)",
             type=["png", "jpg", "jpeg", "bmp", "tif", "tiff", "webp"],
             key="studio_file_uploader"
         )
@@ -105,7 +112,20 @@ with st.sidebar:
             except Exception as e:
                 st.error(f"Error loading file: {e}")
 
-    elif source_type == "Preset Lunar Crater":
+    elif source_type == "Preset Lunar GeoTIFF (512×512)":
+        p_tif = ROOT_DIR / "data/sombench/cache/20f800becb64a0c7ad314652a683f97f0281fe67/M1290203799CE_r5872_c1112.tif"
+        if p_tif.exists():
+            tif_data = tifffile.imread(str(p_tif))
+            band = tif_data[:, :, 0].astype(np.float64)
+            full_image_raw = ((band - band.min()) / (band.max() - band.min()) * 255.0).astype(np.uint8)
+            image_title = "LRO SomBench WAC GeoTIFF (M1290203799CE, 512×512)"
+        else:
+            full_image_raw = np.full((512, 512), 100, dtype=np.uint8)
+            cv2.circle(full_image_raw, (256, 256), 180, 210, 3)
+            image_title = "Lunar GeoTIFF 512×512 Fallback"
+        st.image(full_image_raw, caption=f"{image_title}", use_container_width=True)
+
+    elif source_type == "Preset Apollo Crater (32×32)":
         p_lunar = ROOT_DIR / "data/sombench/patches/1107931740CE_sub_wac_8x8.png"
         if p_lunar.exists():
             base_crater = cv2.imread(str(p_lunar), cv2.IMREAD_GRAYSCALE)
@@ -114,25 +134,32 @@ with st.sidebar:
             full_image_raw = np.full((32, 32), 100, dtype=np.uint8)
             cv2.circle(full_image_raw, (16, 16), 11, 190, 2)
             cv2.circle(full_image_raw, (16, 16), 8, 45, -1)
-        image_title = "Apollo 16 Lunar Crater (SomBench WAC)"
-        st.image(full_image_raw, caption=f"{image_title} (32×32)", use_container_width=True)
+        image_title = "Apollo 16 Lunar Crater (32×32)"
+        st.image(full_image_raw, caption=f"{image_title}", use_container_width=True)
 
-    else:  # Preset Sharp Synthetic Rim
-        full_image_raw = np.full((32, 32), 40, dtype=np.uint8)
-        cv2.circle(full_image_raw, (16, 16), 12, 230, 2)
-        cv2.circle(full_image_raw, (16, 16), 5, 180, -1)
-        image_title = "Synthetic High-Contrast Circular Rim"
-        st.image(full_image_raw, caption=f"{image_title} (32×32)", use_container_width=True)
+    else:  # Preset Synthetic Rim
+        full_image_raw = np.full((512, 512), 35, dtype=np.uint8)
+        cv2.circle(full_image_raw, (256, 256), 180, 235, 4)
+        cv2.circle(full_image_raw, (256, 256), 90, 180, -1)
+        image_title = "Synthetic High-Contrast Circular Rim (512×512)"
+        st.image(full_image_raw, caption=f"{image_title}", use_container_width=True)
 
-    # Resolution target
+    # Resolution target: Supports 32, 64, 128, 256, 512
     st.markdown("---")
     st.markdown("#### 📐 Target Processing Resolution")
-    res_choice = st.select_slider(
-        "Resolution (Width = Height)",
-        options=[16, 32, 48, 64],
-        value=32,
-        help="Higher resolutions divide into more 8x8 patches (e.g. 32x32 = 16 patches, 64x64 = 64 patches)."
-    )
+
+    use_native_512 = st.checkbox("⚡ Full Native 512×512 Resolution", value=(full_image_raw is not None and max(full_image_raw.shape) >= 512))
+
+    if use_native_512:
+        res_choice = 512
+        st.caption("Running at **512×512** (4,096 local 8×8 quantum registers & 262,144 pixels).")
+    else:
+        res_choice = st.select_slider(
+            "Resolution (Width = Height)",
+            options=[32, 64, 128, 256, 512],
+            value=128 if full_image_raw is not None and max(full_image_raw.shape) >= 128 else 32,
+            help="Full image divides into (Res/8)^2 quantum 8x8 patches (e.g. 512x512 = 4,096 patches)."
+        )
 
     if full_image_raw is not None:
         if full_image_raw.shape[0] != res_choice or full_image_raw.shape[1] != res_choice:
