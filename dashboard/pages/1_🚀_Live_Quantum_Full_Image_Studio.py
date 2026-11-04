@@ -12,12 +12,19 @@ Dedicated Streamlit Page providing:
 3. Curated Multi-Method Processed Results Gallery of the Uploaded Image (Quantum, Sobel, Canny, Robinson) with Glowing Overlays
 4. In-Depth Performance Diagnostic Verdict & Comprehensive Quantitative Benchmark Scorecard Table
 """
+import sys
+from pathlib import Path
+
+# Add project root to path before any dashboard package imports
+ROOT_DIR = Path(__file__).resolve().parents[2]
+if str(ROOT_DIR) not in sys.path:
+    sys.path.insert(0, str(ROOT_DIR))
+
 import streamlit as st
 import streamlit.components.v1 as components
 import numpy as np
 import cv2
 from PIL import Image
-from pathlib import Path
 import matplotlib.pyplot as plt
 import pandas as pd
 import importlib
@@ -40,8 +47,6 @@ from dashboard.components.comparison_showcase import (
     compute_intrinsic_quality_metrics,
     compute_comparative_rankings
 )
-
-ROOT_DIR = Path(__file__).resolve().parents[2]
 
 # -----------------------------------------------------------------------------
 # Streamlit Page Configuration
