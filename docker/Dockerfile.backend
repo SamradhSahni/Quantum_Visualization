@@ -1,0 +1,36 @@
+# =============================================================================
+# Production Multi-Stage Dockerfile for FastAPI + Qiskit Aer Microservice
+# =============================================================================
+FROM python:3.12-slim-bookworm AS builder
+WORKDIR /build
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    cmake \
+    libgomp1 \
+    && rm -rf /var/lib/apt/lists/*
+COPY backend/requirements.txt .
+RUN pip wheel --no-cache-dir --wheel-dir /build/wheels -r requirements.txt
+
+FROM python:3.12-slim-bookworm AS runner
+WORKDIR /app
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libgomp1 \
+    libglib2.0-0 \
+    libsm6 \
+    libxext6 \
+    libxrender-dev \
+    && rm -rf /var/lib/apt/lists/* \
+    && groupadd -r -g 10001 qvision && useradd -r -u 10001 -g qvision qvision
+COPY --from=builder /build/wheels /wheels
+RUN pip install --no-cache-dir /wheels/* && rm -rf /wheels
+COPY ./backend /app/backend
+RUN mkdir -p /app/backend/data && chown -R 10001:10001 /app/backend/data
+
+# Prevent OpenMP thread oversubscription inside worker processes
+ENV OMP_NUM_THREADS=1
+ENV QISKIT_IN_PARALLEL=FALSE
+ENV PYTHONUNBUFFERED=1
+USER qvision
+EXPOSE 8000
+CMD ["uvicorn", "backend.app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+

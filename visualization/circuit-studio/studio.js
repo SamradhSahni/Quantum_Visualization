@@ -1,6 +1,7 @@
 (() => {
   'use strict';
   const $=id=>document.getElementById(id),sim=QuantumSim;
+  const escHtml=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   let n=2,gates=[],frames=[],step=0,shotNumber=1,preset='bell',counts={},counted=false,timer=null;
   const bits=i=>i.toString(2).padStart(n,'0'),pct=p=>`${(p*100).toFixed(1)}%`;
   const pretty=x=>(Math.abs(x)<1e-9?0:x).toFixed(3);
@@ -52,10 +53,15 @@
     const actions=$('step-actions');
     if(actions){
       if(step>=1&&step<=gates.length){
-        actions.innerHTML=`<button id="del-step-gate" class="text-button danger-btn" style="font-weight:600;display:inline-flex;align-items:center;gap:4px;">🗑 Delete this gate (Step ${step})</button>`;
-        $('del-step-gate').addEventListener('click',()=>deleteGate(step-1));
+        const btn=document.createElement('button');
+        btn.id='del-step-gate';
+        btn.className='text-button danger-btn';
+        btn.style.cssText='font-weight:600;display:inline-flex;align-items:center;gap:4px;';
+        btn.textContent=`Delete this gate (Step ${step})`;
+        btn.addEventListener('click',()=>deleteGate(step-1));
+        actions.replaceChildren(btn);
       } else {
-        actions.innerHTML='';
+        actions.replaceChildren();
       }
     }
   }
@@ -92,28 +98,61 @@
     if($('active-gate-count'))$('active-gate-count').textContent=gates.length;
     if($('gate-list')){
       if(!gates.length){
-        $('gate-list').innerHTML='<div class="empty-gate-list">Empty circuit. Add a gate above to begin.</div>';
+        const emptyEl=document.createElement('div');
+        emptyEl.className='empty-gate-list';
+        emptyEl.textContent='Empty circuit. Add a gate above to begin.';
+        $('gate-list').replaceChildren(emptyEl);
       } else {
-        $('gate-list').innerHTML=gates.map((g,i)=>{
-          const active=step===i+1;
-          return `<div class="gate-item ${active?'active':''}">
-            <button class="gate-item-seek" data-seek="${i+1}" title="Seek to step ${i+1}: ${gateName(g)}">
-              <span class="gate-num">${String(i+1).padStart(2,'0')}</span>
-              <span class="gate-title">${gateName(g)}</span>
-            </button>
-            <button class="gate-item-del" data-del-list="${i}" title="Delete gate ${i+1}" aria-label="Delete gate ${i+1}">✕</button>
-          </div>`;
-        }).join('');
-        $('gate-list').querySelectorAll('[data-seek]').forEach(b=>b.addEventListener('click',()=>{pause();move(Number(b.dataset.seek));}));
-        $('gate-list').querySelectorAll('[data-del-list]').forEach(b=>b.addEventListener('click',e=>{e.stopPropagation();deleteGate(Number(b.dataset.delList));}));
+        const nodes=gates.map((g,i)=>{
+          const row=document.createElement('div');
+          row.className=`gate-item ${step===i+1?'active':''}`;
+          const seekBtn=document.createElement('button');
+          seekBtn.className='gate-item-seek';
+          seekBtn.title=`Seek to step ${i+1}: ${gateName(g)}`;
+          seekBtn.addEventListener('click',()=>{pause();move(i+1);});
+          const numSpan=document.createElement('span');
+          numSpan.className='gate-num';
+          numSpan.textContent=String(i+1).padStart(2,'0');
+          const titleSpan=document.createElement('span');
+          titleSpan.className='gate-title';
+          titleSpan.textContent=gateName(g);
+          seekBtn.append(numSpan,titleSpan);
+          const delBtn=document.createElement('button');
+          delBtn.className='gate-item-del';
+          delBtn.title=`Delete gate ${i+1}`;
+          delBtn.setAttribute('aria-label',`Delete gate ${i+1}`);
+          delBtn.textContent='✕';
+          delBtn.addEventListener('click',e=>{e.stopPropagation();deleteGate(i);});
+          row.append(seekBtn,delBtn);
+          return row;
+        });
+        $('gate-list').replaceChildren(...nodes);
       }
     }
     $('circuit-name').textContent=preset?sim.presets[preset].name:'Your circuit';$('description').textContent=preset?sim.presets[preset].description:'An ideal quantum register, your gates, and a final measurement of every qubit.';$('gate-count').textContent=`${n} QUBITS / ${sequence().length} OPERATIONS`;
     document.querySelectorAll('.preset').forEach(b=>b.classList.toggle('active',b.dataset.preset===preset));drawCircuit();describe(frames[step]);drawState(frames[step]);drawHistogram();
   }
   const icons={blank:'✧',bell:'⟷',ghz:'⋈',phase:'◌',qhed:'▦',teleport:'⇢'},subtitles={blank:'Empty register · build your own',bell:'Superposition → entanglement',ghz:'Three-qubit correlation',phase:'From phase to probability',qhed:'From the original project',teleport:'Advanced · classical feed-forward'};
-  $('presets').innerHTML=Object.entries(sim.presets).map(([key,p])=>`<button class="preset" data-preset="${key}"><span class="preset-icon">${icons[key]||'◈'}</span><span>${p.name}<small>${subtitles[key]||''}</small></span><span class="arrow">›</span></button>`).join('');
-  document.querySelectorAll('.preset').forEach(b=>b.addEventListener('click',()=>loadPreset(b.dataset.preset)));
+  const presetBtns=Object.entries(sim.presets).map(([key,p])=>{
+    const b=document.createElement('button');
+    b.className='preset';
+    b.dataset.preset=key;
+    const ico=document.createElement('span');
+    ico.className='preset-icon';
+    ico.textContent=icons[key]||'◈';
+    const labelWrap=document.createElement('span');
+    labelWrap.textContent=p.name;
+    const small=document.createElement('small');
+    small.textContent=subtitles[key]||'';
+    labelWrap.appendChild(small);
+    const arrow=document.createElement('span');
+    arrow.className='arrow';
+    arrow.textContent='›';
+    b.append(ico,labelWrap,arrow);
+    b.addEventListener('click',()=>loadPreset(key));
+    return b;
+  });
+  $('presets').replaceChildren(...presetBtns);
   if($('new-circuit'))$('new-circuit').addEventListener('click',startBlankCircuit);
   if($('clear-gates'))$('clear-gates').addEventListener('click',()=>{
     if(!gates.length){notify('Circuit is already empty.');return;}

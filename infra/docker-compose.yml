@@ -1,0 +1,87 @@
+version: "3.9"
+
+services:
+  backend:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.backend
+    user: "10001:10001"
+    read_only: true
+    tmpfs:
+      - /tmp
+    shm_size: "2gb" # Allocates POSIX shared memory for zero-copy statevector buffers
+    env_file:
+      - ../.env
+    environment:
+      - PYTHONUNBUFFERED=1
+      - OMP_NUM_THREADS=1
+      - REDIS_URL=redis://:${REDIS_PASSWORD:-dev_redis_password}@redis:6379/0
+    volumes:
+      - backend_data:/app/backend/data
+    networks:
+      - edge_net
+      - backend_net
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    depends_on:
+      - redis
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.frontend
+    user: "1001:1001"
+    read_only: true
+    tmpfs:
+      - /tmp
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - BACKEND_API_ORIGIN=http://backend:8000
+      - INTERNAL_PROXY_SECRET=${INTERNAL_PROXY_SECRET}
+    networks:
+      - edge_net
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+  redis:
+    image: redis:7.4-alpine
+    command:
+      - redis-server
+      - --requirepass
+      - ${REDIS_PASSWORD:-dev_redis_password}
+      - --rename-command
+      - FLUSHALL
+      - ""
+      - --rename-command
+      - CONFIG
+      - ""
+    volumes:
+      - redis_data:/data
+    networks:
+      - backend_net
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    restart: unless-stopped
+
+networks:
+  edge_net:
+    driver: bridge
+  backend_net:
+    driver: bridge
+    internal: true
+
+volumes:
+  redis_data:
+  backend_data:

@@ -87,30 +87,52 @@ class DetectionJob:
 JOB = DetectionJob()
 
 
+_ALLOWED_STATIC_EXTENSIONS = frozenset({".html", ".js", ".css", ".json", ".png"})
+
+
 class Handler(SimpleHTTPRequestHandler):
-    def translate_path(self,path):
-        relative=Path(super().translate_path(path)).relative_to(OUTPUT)
-        return str(JOB.output/relative)
-    def reply(self,value,status=200):
+    def translate_path(self, path):
+        raw_rel = unquote(path.split("?", 1)[0]).lstrip("/")
+        if not raw_rel:
+            raw_rel = "index.html"
+        base = JOB.output.resolve()
+        candidate = (base / raw_rel).resolve()
+        if not candidate.is_relative_to(base):
+            return str(base / "__forbidden__")
+        return str(candidate)
+
+    def reply(self, value, status=200):
         body = json.dumps(value).encode()
         self.send_response(status)
-        self.send_header('Content-Type','application/json')
-        self.send_header('Cache-Control','no-store')
-        self.send_header('Content-Length',str(len(body)))
-        self.end_headers();self.wfile.write(body)
+        self.send_header('Content-Type', 'application/json')
+        self.send_header('Cache-Control', 'no-store')
+        self.send_header('Content-Length', str(len(body)))
+        self.end_headers(); self.wfile.write(body)
 
     def do_GET(self):
-        if self.path.split('?',1)[0] == '/api/status':
+        clean_path = unquote(self.path.split('?', 1)[0])
+        if clean_path == '/api/status':
             self.reply(JOB.status())
-        elif self.path.split('?',1)[0] == '/api/trace':
+        elif clean_path == '/api/trace':
             try:
-                packet = json.loads((JOB.output/'gate_trace_latest.json').read_text(encoding='utf-8'))
-            except (OSError,json.JSONDecodeError):
-                packet = {'waiting':True}
+                packet = json.loads((JOB.output / 'gate_trace_latest.json').read_text(encoding='utf-8'))
+            except (OSError, json.JSONDecodeError):
+                packet = {'waiting': True}
             self.reply(packet)
-        elif self.path.split('?',1)[0]=='/api/context':
+        elif clean_path == '/api/context':
             self.reply(JOB.context)
         else:
+            rel = clean_path.lstrip("/") or "index.html"
+            base = JOB.output.resolve()
+            resolved = (base / rel).resolve()
+            if (
+                not resolved.is_relative_to(base)
+                or resolved.name.startswith(".")
+                or resolved.suffix.lower() not in _ALLOWED_STATIC_EXTENSIONS
+                or resolved.name in ("run.log", "source.bin")
+            ):
+                self.reply({'error': 'Access denied'}, 403)
+                return
             super().do_GET()
 
     def do_POST(self):

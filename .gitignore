@@ -51,3 +51,28 @@ results/upload_verification/
 # Interrupted experiment recovery files
 results/bsds_pilot/interrupted_artifacts/
 results/bsds_pilot/readme_recovery_sections.md
+
+# Security & Secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.crt
+
+# Databases
+*.db
+*.db-wal
+*.db-shm
+*.sqlite
+*.sqlite3
+backend/data/
+
+# Frontend build artifacts & tooling caches
+node_modules/
+.next/
+out/
+tsconfig.tsbuildinfo
+.pytest_cache/
+.playwright-mcp/
+.agents/

@@ -1,0 +1,175 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --font-geist-sans: 'Geist', 'Manrope', system-ui, -apple-system, sans-serif;
+    --font-geist-mono: 'Geist Mono', monospace;
+  }
+
+  body {
+    background-color: #000000;
+    color: #EDEDED;
+    font-family: var(--font-geist-sans);
+    margin: 0;
+    padding: 0;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    overflow-x: hidden;
+  }
+
+  /* No italics anywhere in the interface per SKILL.md */
+  * {
+    font-style: normal !important;
+    box-sizing: border-box;
+  }
+
+  /* Headings: balance wrap, no orphaned words */
+  h1, h2, h3, h4, h5, h6 {
+    text-wrap: balance;
+    letter-spacing: -0.02em;
+  }
+
+  /* Paragraphs & body: pretty wrap (excluding KaTeX internal spans) */
+  p, span:not(.katex *), li, label {
+    text-wrap: pretty;
+  }
+}
+
+/* Protect KaTeX math typesetting from text-wrap and box-sizing overrides */
+.katex,
+.katex-display,
+.katex * {
+  text-wrap: nowrap;
+  box-sizing: content-box;
+}
+
+.katex .katex-base,
+.katex .katex-base * {
+  white-space: inherit;
+}
+
+.katex .katex-base {
+  white-space: nowrap;
+  width: auto;
+}
+
+.katex .vlist > span {
+  white-space: nowrap;
+}
+
+/* =========================================================================
+   SKILL.md Part B1: Strict Named Text Styles
+   ========================================================================= */
+
+.heading-1 {
+  font-size: 3.75rem; /* text-6xl (60px) */
+  line-height: 1;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+}
+
+.heading-2 {
+  font-size: 3rem; /* text-5xl (48px) */
+  line-height: 1;
+  font-weight: 600;
+  letter-spacing: -0.025em;
+}
+
+.heading-3 {
+  font-size: 2.25rem; /* text-4xl (36px) */
+  line-height: 2.5rem; /* 40px */
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.heading-4 {
+  font-size: 1.875rem; /* text-3xl (30px) */
+  line-height: 2.25rem; /* 36px */
+  font-weight: 600;
+}
+
+.heading-5 {
+  font-size: 1.5rem; /* text-2xl (24px) */
+  line-height: 2rem; /* 32px */
+  font-weight: 600;
+}
+
+.heading-6 {
+  font-size: 1.25rem; /* text-xl (20px) */
+  line-height: 1.75rem; /* 28px */
+  font-weight: 600;
+}
+
+.title-1 { font-size: 1.25rem; line-height: 1.75rem; font-weight: 500; }
+.title-2 { font-size: 1.125rem; line-height: 1.75rem; font-weight: 500; }
+.title-3 { font-size: 1rem; line-height: 1.5rem; font-weight: 500; }
+.title-4 { font-size: 0.875rem; line-height: 1.25rem; font-weight: 500; }
+.title-5 { font-size: 0.75rem; line-height: 1rem; font-weight: 500; }
+
+.body-1 { font-size: 1rem; line-height: 1.5rem; font-weight: 600; }
+.body-2 { font-size: 1rem; line-height: 1.5rem; font-weight: 500; }
+.body-3 { font-size: 1rem; line-height: 1.5rem; font-weight: 400; color: #A1A1A1; }
+.body-4 { font-size: 0.875rem; line-height: 1.25rem; font-weight: 600; }
+.body-5 { font-size: 0.875rem; line-height: 1.25rem; font-weight: 500; }
+.body-6 { font-size: 0.875rem; line-height: 1.25rem; font-weight: 400; color: #A1A1A1; }
+
+/* Main buttons: 8px vertical padding, 12px horizontal padding per SKILL.md B2 */
+.button-lg {
+  font-size: 1.125rem;
+  line-height: 1.75rem;
+  font-weight: 600;
+  padding: 8px 16px;
+}
+
+.button-md {
+  font-size: 1rem;
+  line-height: 1.5rem;
+  font-weight: 600;
+  padding: 8px 12px;
+}
+
+.button-sm {
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  font-weight: 600;
+  padding: 6px 12px;
+}
+
+.button-xsm {
+  font-size: 0.75rem;
+  line-height: 1rem;
+  font-weight: 600;
+  padding: 4px 8px;
+}
+
+.caption-1 { font-size: 0.875rem; line-height: 1.25rem; font-weight: 500; }
+.caption-2 { font-size: 0.875rem; line-height: 1.25rem; font-weight: 400; color: #888888; }
+.caption-3 { font-size: 0.75rem; line-height: 1rem; font-weight: 600; }
+.caption-4 { font-size: 0.75rem; line-height: 1rem; font-weight: 500; color: #888888; }
+.caption-5 { font-size: 0.75rem; line-height: 1rem; font-weight: 400; color: #666666; }
+
+/* Hero Heading Text Gradient (The ONLY gradient allowed per SKILL.md B5) */
+.hero-gradient-text {
+  background: linear-gradient(90deg, #FFFFFF 0%, #9B9B9B 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Custom scrollbar for data tables */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #181818;
+}
+::-webkit-scrollbar-thumb {
+  background: #313131;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #444444;
+}
+
